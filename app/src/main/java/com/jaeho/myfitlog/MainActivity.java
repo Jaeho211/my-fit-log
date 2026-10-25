@@ -35,7 +35,19 @@ public class MainActivity extends Activity {
  TextView brand=text(root,"MY FIT LOG  /  나의 꾸준함",12);brand.setTextColor(accent);brand.setLetterSpacing(.12f);
  TextView title=text(root,tab.equals("오늘")?"오늘도, 한 걸음":tab.equals("운동")?"나의 운동 라이브러리":tab.equals("기록")?"쌓여가는 기록":tab.equals("예약")?"다음 PT 준비":"나에게 맞게",27);title.setTypeface(null,android.graphics.Typeface.BOLD);
  ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));body=new LinearLayout(this);body.setOrientation(LinearLayout.VERTICAL);body.setPadding(0,dp(8),0,dp(16));scroll.addView(body);
- LinearLayout nav=new LinearLayout(this);nav.setPadding(0,dp(8),0,dp(8));root.addView(nav);String[] tabs={"오늘","기록","운동","예약","설정"};String[] marks={"◉","▤","＋","▦","⚙"};for(int n=0;n<tabs.length;n++){String dest=tabs[n];TextView t=new TextView(this);t.setText(marks[n]+"\\n"+dest);t.setGravity(Gravity.CENTER);t.setTextSize(13);t.setTextColor(tab.equals(dest)?accent:0xff77817b);t.setBackground(surface(tab.equals(dest)?0xffdcebdc:0xfff3f5f1,16));nav.addView(t,new LinearLayout.LayoutParams(0,dp(58),1));t.setContentDescription(dest+" 탭");t.setOnClickListener(v->{tab=dest;show();});}
+
+ LinearLayout nav=new LinearLayout(this);nav.setPadding(0,dp(8),0,dp(8));root.addView(nav);
+ String[] tabs={"오늘","기록","운동","예약","설정"};
+ int[] icons={android.R.drawable.ic_menu_today,android.R.drawable.ic_menu_recent_history,android.R.drawable.ic_menu_agenda,android.R.drawable.ic_menu_my_calendar,android.R.drawable.ic_menu_preferences};
+ for(int n=0;n<tabs.length;n++){
+  String dest=tabs[n];boolean selected=tab.equals(dest);
+  LinearLayout item=new LinearLayout(this);item.setOrientation(LinearLayout.VERTICAL);item.setGravity(Gravity.CENTER);
+  item.setBackground(new android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(0x22339988),surface(selected?0xffdcebdc:0xfff3f5f1,16),null));
+  ImageView icon=new ImageView(this);icon.setImageResource(icons[n]);icon.setColorFilter(selected?accent:0xff77817b);item.addView(icon,new LinearLayout.LayoutParams(dp(24),dp(24)));
+  TextView label=new TextView(this);label.setText(dest);label.setTextSize(12);label.setTextColor(selected?accent:0xff77817b);label.setGravity(Gravity.CENTER);label.setPadding(0,dp(4),0,0);item.addView(label);
+  item.setContentDescription(dest+" 탭");item.setSelected(selected);item.setFocusable(true);item.setOnClickListener(v->{tab=dest;show();});nav.addView(item,new LinearLayout.LayoutParams(0,dp(64),1));
+ }
+
  switch(tab){case "오늘":home();break;case "운동":exercises();break;case "기록":logs();break;case "예약":appointments();break;default:settings();}
  }
  void home(){LinearLayout b=box();text(b,"상체 근력 · 자세 익히기",20);text(b,"PT 입문  /  집: 3kg 덤벨 × 2 · 철봉",14);Calendar start=Calendar.getInstance();start.set(Calendar.DAY_OF_WEEK,Calendar.MONDAY);start.set(Calendar.HOUR_OF_DAY,0);start.set(Calendar.MINUTE,0);start.set(Calendar.SECOND,0);start.set(Calendar.MILLISECOND,0);if(start.getTimeInMillis()>System.currentTimeMillis())start.add(Calendar.DAY_OF_MONTH,-7);Set<String> days=new HashSet<>();for(int i=0;i<arr("logs").length();i++){JSONObject l=arr("logs").optJSONObject(i);if(l.optLong("time")>=start.getTimeInMillis())days.add(day(l.optLong("time")));}text(b,"이번 주 "+days.size()+" / "+db.optInt("weekly",3)+"일 운동",18);ProgressBar progress=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);progress.setMax(db.optInt("weekly",3));progress.setProgress(days.size());progress.setProgressTintList(android.content.res.ColorStateList.valueOf(accent));b.addView(progress,new LinearLayout.LayoutParams(-1,dp(8)));
@@ -45,7 +57,33 @@ public class MainActivity extends Activity {
  }
  long lastTime(String id){long t=0;for(int i=0;i<arr("logs").length();i++){JSONObject l=arr("logs").optJSONObject(i);if(id.equals(l.optString("id")))t=Math.max(t,l.optLong("time"));}return t;}
  void choosePlan(int place){JSONArray ex=arr("exercises");ArrayList<JSONObject> eligible=new ArrayList<>();for(int i=0;i<ex.length();i++){JSONObject e=ex.optJSONObject(i);if(place!=0||e.optBoolean("home"))eligible.add(e);}if(eligible.isEmpty()){toast("먼저 해당 장소에서 가능한 운동을 등록해 주세요.");return;}eligible.sort((a,b)->Long.compare(lastTime(a.optString("id")),lastTime(b.optString("id"))));String[] names=new String[eligible.size()];boolean[] selected=new boolean[names.length];for(int i=0;i<names.length;i++){names[i]=eligible.get(i).optString("name");selected[i]=i<3;}new AlertDialog.Builder(this).setTitle("최근에 덜 한 운동 순 · 최대 3개 기본 선택").setMultiChoiceItems(names,selected,(d,n,c)->selected[n]=c).setNegativeButton("취소",null).setPositiveButton("계획 적용",(d,w)->{JSONArray plan=new JSONArray();for(int i=0;i<arr("plan").length();i++){JSONObject p=arr("plan").optJSONObject(i);if(!today().equals(p.optString("date")))plan.put(p);}for(int i=0;i<names.length;i++)if(selected[i]){JSONObject e=eligible.get(i);plan.put(obj("date",today(),"name",e.optString("name"),"id",e.optString("id"),"kg",place==0&&e.optString("equipment").contains("덤벨")?"3":e.optString("kg"),"reps",e.optString("reps"),"sets",e.optString("sets"),"note",e.optString("note"),"place",new String[]{"집","헬스장","PT"}[place]));}put("plan",plan);save();show();}).show();}
- void exercises(){button(body,"＋ 기본 운동에서 고르기",()->catalog());button(body,"목록에 없는 운동 직접 추가",()->editExercise(null));text(body,"내 운동 "+arr("exercises").length()+"개 · 집에서 가능 여부는 직접 설정해요",14);for(int i=0;i<arr("exercises").length();i++){JSONObject e=arr("exercises").optJSONObject(i);LinearLayout b=box();text(b,e.optString("name"),21);text(b,e.optString("equipment")+" · "+(e.optBoolean("home")?"집에서도 가능":"헬스장"),14);text(b,e.optString("note"),16);button(b,"자세 메모 · 목표 수정",()->editExercise(e));}}
+
+ void exercises(){
+  button(body,"＋ 기본 운동에서 고르기",()->catalog());
+  TextView custom=text(body,"목록에 없나요? 직접 추가",14);custom.setTextColor(accent);custom.setMinHeight(dp(48));custom.setGravity(Gravity.CENTER);custom.setOnClickListener(v->editExercise(null));
+  text(body,"내 운동 "+arr("exercises").length()+"개",14);
+  if(arr("exercises").length()==0){LinearLayout empty=box();text(empty,"자주 하는 운동을 모아보세요",20);text(empty,"기본 목록에서 골라 추가하고, 자세 메모와 목표를 설정하세요.",15);}
+  for(int i=0;i<arr("exercises").length();i++){
+   JSONObject e=arr("exercises").optJSONObject(i);LinearLayout card=box();
+   TextView name=text(card,e.optString("name"),21);name.setTypeface(null,android.graphics.Typeface.BOLD);
+   text(card,e.optString("equipment")+" · "+(e.optBoolean("home")?"집에서도 가능":"헬스장"),14);
+   if(!e.optString("note").trim().isEmpty())text(card,e.optString("note"),15);
+   text(card,e.optString("kg")+"kg · "+e.optString("reps")+"회 × "+e.optString("sets")+"세트",15);
+   LinearLayout actions=new LinearLayout(this);card.addView(actions);
+   TextView edit=new TextView(this);edit.setText("메모 · 목표 수정");edit.setTextSize(14);edit.setTextColor(accent);edit.setGravity(Gravity.CENTER);actions.addView(edit,new LinearLayout.LayoutParams(0,dp(48),2));edit.setOnClickListener(v->editExercise(e));
+   TextView delete=new TextView(this);delete.setText("삭제");delete.setTextSize(14);delete.setTextColor(0xffb3473a);delete.setGravity(Gravity.CENTER);delete.setContentDescription(e.optString("name")+" 삭제");actions.addView(delete,new LinearLayout.LayoutParams(0,dp(48),1));delete.setOnClickListener(v->deleteExercise(e));
+  }
+ }
+ void deleteExercise(JSONObject exercise){
+  String id=exercise.optString("id");
+  new AlertDialog.Builder(this).setTitle(exercise.optString("name")+" 삭제")
+   .setMessage("내 운동 목록과 오늘 이후의 계획에서 제외합니다. 이미 완료한 운동 기록은 그대로 남습니다.")
+   .setNegativeButton("취소",null).setPositiveButton("삭제",(dialog,which)->{
+    for(int i=arr("exercises").length()-1;i>=0;i--)if(id.equals(arr("exercises").optJSONObject(i).optString("id")))arr("exercises").remove(i);
+    for(int i=arr("plan").length()-1;i>=0;i--){JSONObject p=arr("plan").optJSONObject(i);if(id.equals(p.optString("id"))&&p.optString("date").compareTo(today())>=0)arr("plan").remove(i);}
+    save();show();toast("내 운동에서 삭제했어요. 수행 기록은 유지됩니다.");
+   }).show();
+ }
 
  // Catalog entries are choices, never automatically enrolled or marked learned.
  final String[][] basics={
