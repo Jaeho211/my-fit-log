@@ -30,7 +30,7 @@ public class MainActivity extends Activity {
  String day(long time){return new SimpleDateFormat("yyyy-MM-dd",Locale.KOREA).format(new Date(time));}
  String today(){return day(System.currentTimeMillis());}
 
- void heading(LinearLayout p,String label,int size){text(p,label,size).setTypeface(android.graphics.Typeface.create("sans-serif-medium",0));}
+ void heading(LinearLayout p,String label,int size){text(p,label,size).setTypeface(android.graphics.Typeface.create("sans-serif-medium",android.graphics.Typeface.NORMAL));}
  void muted(LinearLayout p,String label){text(p,label,13).setTextColor(0xff72756c);}
  void link(LinearLayout p,String label,Runnable action){TextView t=text(p,label,14);t.setTextColor(accent);t.setMinHeight(dp(48));t.setGravity(Gravity.CENTER_VERTICAL);t.setOnClickListener(v->action.run());}
  String weight(String kg){try{return Double.parseDouble(kg)==0?"맨몸":kg+" kg";}catch(Exception e){return kg+" kg";}}
@@ -39,18 +39,18 @@ public class MainActivity extends Activity {
  protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);out.putString("tab",tab);out.putString("active",active==null?"":active.optString("id"));}
  @Override public void onBackPressed(){if(active!=null){active=null;show();}else if(!tab.equals("오늘")){tab="오늘";show();}else super.onBackPressed();}
  void show(){
- LinearLayout root=new LinearLayout(this);root.setOrientation(1);root.setBackgroundColor(0xfff7f6ef);setContentView(root);
+ LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(0xfff7f6ef);setContentView(root);
  root.setOnApplyWindowInsetsListener((v,i)->{v.setPadding(dp(20),i.getSystemWindowInsetTop()+dp(8),dp(20),i.getSystemWindowInsetBottom());return i;});
  LinearLayout top=new LinearLayout(this);top.setGravity(Gravity.CENTER_VERTICAL);root.addView(top);
  TextView brand=new TextView(this);brand.setText("MY FIT LOG");brand.setTextColor(ink);brand.setTextSize(12);brand.setLetterSpacing(.15f);top.addView(brand,new LinearLayout.LayoutParams(0,dp(48),1));
  TextView gear=new TextView(this);gear.setText("설정");gear.setTextColor(accent);gear.setGravity(Gravity.CENTER);gear.setContentDescription("설정 열기");top.addView(gear,new LinearLayout.LayoutParams(dp(56),dp(48)));gear.setOnClickListener(v->{active=null;tab="설정";show();});
  heading(root,active!=null?"운동에 집중":tab.equals("오늘")?"오늘의 운동":tab.equals("운동")?"내 운동":tab.equals("예약")?"PT 일정":tab.equals("기록")?"운동 기록":"나에게 맞게",28);
- ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));body=new LinearLayout(this);body.setOrientation(1);body.setPadding(0,dp(8),0,dp(20));scroll.addView(body);
+ ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));body=new LinearLayout(this);body.setOrientation(LinearLayout.VERTICAL);body.setPadding(0,dp(8),0,dp(20));scroll.addView(body);
  if(active!=null&&!today().equals(active.optString("date")))active=null;
  if(undoEntry!=null){LinearLayout undo=box();link(undo,"✓ 세트를 기록했어요 · 실행 취소",()->{for(int i=arr("logs").length()-1;i>=0;i--)if(arr("logs").optJSONObject(i)==undoEntry){arr("logs").remove(i);break;}undoEntry=null;save();show();});}
  if(active!=null)workout();else switch(tab){case "오늘":home();break;case "운동":exercises();break;case "기록":logs();break;case "예약":appointments();break;default:settings();}
  LinearLayout nav=new LinearLayout(this);root.addView(nav);String[] tabs={"오늘","기록","운동","예약"};String[] labels={"오늘","기록","내 운동","PT"};String[] glyphs={"home","history","dumbbell","calendar"};
- for(int n=0;n<tabs.length;n++){String dest=tabs[n];boolean selected=tab.equals(dest);LinearLayout item=new LinearLayout(this);item.setOrientation(1);item.setGravity(Gravity.CENTER);item.setBackground(surface(selected?0xffd8ee86:0xfff7f6ef,16));item.addView(new NavIcon(glyphs[n],selected?ink:0xff77796f),new LinearLayout.LayoutParams(dp(24),dp(24)));TextView t=new TextView(this);t.setText(labels[n]);t.setTextSize(12);t.setTextColor(selected?ink:0xff72756c);item.addView(t);item.setContentDescription(labels[n]+" 탭");item.setSelected(selected);item.setOnClickListener(v->{active=null;tab=dest;show();});nav.addView(item,new LinearLayout.LayoutParams(0,dp(64),1));}
+ for(int n=0;n<tabs.length;n++){String dest=tabs[n];boolean selected=tab.equals(dest);LinearLayout item=new LinearLayout(this);item.setOrientation(LinearLayout.VERTICAL);item.setGravity(Gravity.CENTER);item.setBackground(surface(selected?0xffd8ee86:0xfff7f6ef,16));item.addView(new NavIcon(glyphs[n],selected?ink:0xff77796f),new LinearLayout.LayoutParams(dp(24),dp(24)));TextView t=new TextView(this);t.setText(labels[n]);t.setTextSize(12);t.setTextColor(selected?ink:0xff72756c);item.addView(t);item.setContentDescription(labels[n]+" 탭");item.setSelected(selected);item.setOnClickListener(v->{active=null;tab=dest;show();});nav.addView(item,new LinearLayout.LayoutParams(0,dp(64),1));}
  }
  class NavIcon extends View{
  String kind;int color;NavIcon(String k,int c){super(MainActivity.this);kind=k;color=c;}
