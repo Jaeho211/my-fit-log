@@ -1,23 +1,33 @@
 # 마이핏로그
-재호의 개인용 오프라인 Android 운동 기록 앱. Java 17, Android 8 이상. 서버·로그인·사진·외부 AI API 없음.
+재호의 개인용 오프라인 Android 운동 기록 앱. Kotlin + Jetpack Compose(Material 3), Android 8 이상. 기존 관리 화면 일부는 Java로 유지합니다. 서버·로그인·사진·외부 AI API 없음.
 
 ## 사용
 1. **운동**에서 PT에서 배운 정확한 운동 이름, 장비, 자세 메모와 목표 무게·횟수·세트를 등록합니다. 덤벨 무게는 한 개 기준입니다.
 2. 집의 3kg 덤벨 두 개로 혼자 할 수 있는 운동에 체크합니다.
-3. **오늘 → 오늘 루틴 구성**에서 장소를 선택합니다. 최근 기록이 오래된 운동부터 최대 3개를 기본 선택하는 단순 규칙이며, 직접 선택을 바꿀 수 있습니다. 근육별 회복 상태를 판단하는 처방 기능이 아닙니다.
-4. 세트마다 실제 무게·횟수와 컨디션을 기록합니다. 같은 운동·장소의 지난 기록을 불러옵니다.
+3. **오늘 → 오늘 루틴 구성** 또는 **루틴 편집**에서 장소와 운동을 고른 뒤 적용합니다. 최근 기록이 오래된 운동부터 최대 3개를 기본 선택하는 단순 규칙이며, 직접 선택을 바꿀 수 있습니다. 근육별 회복 상태를 판단하는 처방 기능이 아닙니다.
+4. **운동 시작 / 이어하기**에서 실제 무게·횟수를 입력하고 하단의 **세트 완료**를 누릅니다. 자세·컨디션 메모를 펼쳐 볼 수 있고, 방금 기록한 세트는 실행 취소할 수 있습니다. 같은 운동·장소의 이전 날짜 기록을 표시합니다.
 5. **예약**에서 PT 날짜·시간과 알림 시점을 등록합니다. 반복 예약은 없습니다. 수정·삭제 및 재부팅 후 알림 복구를 지원합니다. Android 알림 권한을 허용해야 합니다. 절전 정책 때문에 알림 시간이 지연될 수 있습니다.
 6. **설정**에서 주간 목표(1~7일)를 바꾸고 JSON 백업을 저장하거나 복원합니다. 복원은 현재 데이터를 교체합니다. 앱 삭제 전 백업하세요.
 
 ## APK 받기
-GitHub **Actions → Android APK → 성공한 실행 → Artifacts → my-fit-log-debug-apk**에서 ZIP을 내려받고 압축을 풀어 `app-debug.apk`를 설치합니다. GitHub 로그인이 필요할 수 있습니다. 개인 테스트용 debug 서명 APK입니다.
+main 브랜치의 GitHub **Actions → Android APK → 성공한 실행 → Artifacts → my-fit-log-signed-apk**에서 ZIP을 내려받고 압축을 풀어 `app-release.apk`를 설치합니다. GitHub 로그인이 필요할 수 있으며 CI에 배포 서명 설정이 필요합니다. 로컬 테스트 APK는 빌드 후 `app/build/outputs/apk/debug/app-debug.apk`에 생성됩니다.
 
 ## 빌드
-Android SDK 35, JDK 17, Gradle 8.9 설치 후:
+Android SDK 35, JDK 17 또는 21에서 프로젝트 루트를 엽니다. Gradle 8.9 wrapper를 포함합니다.
 ```sh
-gradle assembleDebug lintDebug
+./gradlew testDebugUnitTest assembleDebug lintDebug
 ```
-Android Studio에서도 프로젝트 루트를 열 수 있습니다. Gradle wrapper는 포함하지 않았으며 CI에서 Gradle 8.9를 설치합니다.
+에뮬레이터나 테스트 기기를 연결한 뒤 UI 흐름 검증:
+```sh
+./gradlew connectedDebugAndroidTest
+```
+UI 테스트는 테스트 기기의 이 앱 데이터를 예시 데이터로 교체하므로 개인 기록이 없는 테스트 기기에서 실행하세요.
+
+## UI 개편 1차
+- 오늘·운동 진행 화면은 Kotlin + Compose + Material 3로 구현했습니다. 시스템 다크 모드를 지원합니다.
+- 운동 등록·기록 조회·PT·설정은 기존 Java 화면으로 연결합니다.
+- 기존 `fit` / `db` 저장 키, JSON 백업 version 1, applicationId를 유지합니다. 새 세트의 선택적 `entryId`는 실행 취소 대상을 구분합니다.
+- [시안과 구현 계획](docs/design/README.md), [HTML 시안](docs/design/preview.html)을 참고하세요.
 
 ## 범위와 확인사항
 - 1986년생, PT 입문, 상체 근력·자세 개선 프로필, 집 장비 3kg 두 개를 기본 표시합니다.
