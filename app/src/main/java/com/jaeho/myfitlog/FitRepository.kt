@@ -11,7 +11,8 @@ class FitRepository(context: Context) {
     fun read(): JSONObject = JSONObject(preferences.getString("db", FitData.EMPTY) ?: FitData.EMPTY)
 
     fun write(json: JSONObject) {
+        val previous = runCatching { read() }.getOrNull()
         preferences.edit().putString("db", json.toString()).apply()
-        ReminderReceiver.schedule(app)
+        ReminderScheduler.reconcile(app, previous, json)
     }
 }

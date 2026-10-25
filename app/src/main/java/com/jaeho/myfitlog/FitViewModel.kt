@@ -13,6 +13,14 @@ class FitViewModel(application: Application, private val saved: SavedStateHandle
     private var data = FitData(repository.read())
     var summary by mutableStateOf(data.summary(System.currentTimeMillis()))
         private set
+    var section by mutableStateOf(saved.get<String>("section") ?: "오늘")
+        private set
+    var exercises by mutableStateOf(data.exercises())
+        private set
+    var history by mutableStateOf(data.history())
+        private set
+    var appointments by mutableStateOf(data.appointments())
+        private set
     var active by mutableStateOf<ExercisePlan?>(null)
         private set
     var sets by mutableStateOf(emptyList<SetEntry>())
@@ -36,6 +44,9 @@ class FitViewModel(application: Application, private val saved: SavedStateHandle
         runCatching {
             data = FitData(repository.read())
             summary = data.summary(System.currentTimeMillis())
+            exercises = data.exercises()
+            history = data.history()
+            appointments = data.appointments()
             active = summary.plans.firstOrNull { it.key.value == saved.get<String>("active") }
             if (active == null) saved["active"] = ""
             if (!data.hasEntry(undoToken)) { undoToken = ""; saved["undo"] = "" }
@@ -57,7 +68,26 @@ class FitViewModel(application: Application, private val saved: SavedStateHandle
         error = null
         updateWorkout()
     }
-    fun home() { active = null; saved["active"] = ""; error = null }
+    fun home() { section = "오늘"; saved["section"] = "오늘"; active = null; saved["active"] = ""; error = null }
+    fun navigate(destination: String) {
+        home()
+        section = if (destination in listOf("운동", "기록", "예약")) destination else "오늘"
+        saved["section"] = section
+    }
+    fun saveExercise(draft: ExerciseDraft): String? {
+        var id: String? = null
+        val success = mutate { id = data.saveExercise(draft) }
+        return if (success) id else null
+    }
+    fun deleteExercise(id: String): Boolean = mutate { data.deleteExercise(id, LocalDate.now()) }
+    fun deleteHistoryRecord(key: HistoryKey): Boolean = mutate { data.deleteHistoryRecord(key) }
+    fun saveAppointment(draft: AppointmentDraft): Int? {
+        var id: Int? = null
+        val success = mutate { id = data.saveAppointment(draft, System.currentTimeMillis()) }
+        return if (success) id else null
+    }
+    fun deleteAppointment(id: Int): Boolean = mutate { data.deleteAppointment(id) }
+    fun clearError() { error = null }
     fun editKg(value: String) { kg = value; saved["kg"] = value; error = null }
     fun editReps(value: String) { reps = value; saved["reps"] = value; error = null }
     fun editMemo(value: String) { memo = value; saved["memo"] = value }
@@ -88,11 +118,13 @@ class FitViewModel(application: Application, private val saved: SavedStateHandle
         val p = active ?: return
         mutate { data.removePlan(p.key); home() }
     }
-    private fun mutate(action: () -> Unit) {
-        runCatching {
+    private fun mutate(action: () -> Unit): Boolean {
+        error = null
+        return runCatching {
             action()
             repository.write(data.json)
             refresh()
-        }.onFailure { error = it.message ?: "변경 사항을 저장할 수 없습니다" }
+            true
+        }.getOrElse { error = it.message ?: "변경 사항을 저장할 수 없습니다"; false }
     }
 }

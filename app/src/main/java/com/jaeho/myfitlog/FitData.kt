@@ -75,6 +75,98 @@ class FitData(val json: JSONObject, private val zone: ZoneId = ZoneId.systemDefa
             next?.let { AppointmentSummary(it.optLong("time"), it.optString("note")) })
     }
 
+    fun appointments(): List<PtAppointment> = objects("appointments").map {
+        PtAppointment(it.getInt("id"), it.getLong("time"), it.optString("note"), it.optInt("minutes", 60))
+    }.sortedBy { it.time }
+
+    fun saveAppointment(draft: AppointmentDraft, now: Long): Int {
+        require(draft.errors(now, zone).isEmpty()) { draft.errors(now, zone).values.first() }
+        val appointments = array("appointments")
+        val existingIndex = (0 until appointments.length()).firstOrNull {
+            appointments.getJSONObject(it).getInt("id") == draft.id
+        }
+        require(draft.id == null || existingIndex != null) { "삭제된 예약입니다. 목록을 다시 확인해 주세요" }
+        val used = this.appointments().map { it.id }.toSet()
+        val id = draft.id ?: (1..Int.MAX_VALUE).first { it !in used }
+        val updated = if (existingIndex == null) JSONObject() else JSONObject(appointments.getJSONObject(existingIndex).toString())
+        updated.put("id", id); updated.put("time", draft.time(zone)); updated.put("note", draft.note.trim())
+        updated.put("minutes", draft.minutes.trim().toInt())
+        if (existingIndex == null) appointments.put(updated) else appointments.put(existingIndex, updated)
+        return id
+    }
+
+    fun deleteAppointment(id: Int) {
+        val appointments = array("appointments")
+        val index = (0 until appointments.length()).firstOrNull { appointments.getJSONObject(it).getInt("id") == id }
+        require(index != null) { "이미 삭제된 예약입니다" }
+        appointments.remove(index)
+    }
+
+    fun history(): List<HistoryDay> {
+        val snapshot = historyDigest(array("logs").toString())
+        val records = objects("logs").mapIndexed { index, log ->
+            HistoryRecord(HistoryKey(index, historyDigest(log.toString()), snapshot),
+                log.optString("id"), log.optString("name").ifBlank { "이름 없는 운동" },
+                log.optString("place").ifBlank { "장소 미지정" }, log.optLong("time"),
+                log.optString("kg", "0"), log.optString("reps", "0"), log.optString("memo"))
+        }
+        return records.groupBy { date(it.time) }.toSortedMap(compareByDescending { it })
+            .map { (day, entries) ->
+                val groups = entries.groupBy { it.exerciseId to it.place }.map { (key, sets) ->
+                    HistoryGroup(day, key.first, key.second, sets.sortedWith(compareBy({ it.time }, { it.key.index })))
+                }.sortedByDescending { it.records.last().time }
+                HistoryDay(day, groups)
+            }
+    }
+
+    fun deleteHistoryRecord(key: HistoryKey) {
+        val logs = array("logs")
+        require(historyDigest(logs.toString()) == key.snapshot && key.index in 0 until logs.length() &&
+            historyDigest(logs.getJSONObject(key.index).toString()) == key.fingerprint) {
+            "기록이 변경되었어요. 목록에서 다시 선택해 주세요"
+        }
+        logs.remove(key.index)
+    }
+
+    fun exercises(): List<ExerciseDraft> = objects("exercises").map(ExerciseDraft::fromJson)
+
+    fun saveExercise(draft: ExerciseDraft): String {
+        require(draft.errors().isEmpty()) { "입력값을 확인해 주세요" }
+        val existing = objects("exercises").firstOrNull { it.optString("id") == draft.id }
+        require(draft.id.isBlank() || existing != null) { "삭제된 운동입니다. 내 운동 목록을 다시 확인해 주세요" }
+        val normalized = ExerciseDraft.normalizedName(draft.name)
+        val unchangedName = existing != null && normalized == ExerciseDraft.normalizedName(existing.optString("name"))
+        require(unchangedName || objects("exercises").none {
+            it.optString("id") != draft.id && ExerciseDraft.normalizedName(it.optString("name")) == normalized
+        }) { "이미 등록한 운동 이름입니다. 다른 이름으로 구분해 주세요" }
+        val id = existing?.getString("id") ?: UUID.randomUUID().toString()
+        // Clone before editing so validation failures cannot partially mutate a saved exercise.
+        val updated = if (existing == null) JSONObject() else JSONObject(existing.toString())
+        val values = draft.copy(id = id, name = draft.name.trim(), equipment = draft.equipment.trim(),
+            kg = draft.kg.trim(), reps = draft.reps.trim(), sets = draft.sets.trim(),
+            homeKg = if (FitData.validWeight(draft.effectiveHomeKg)) draft.effectiveHomeKg.trim() else "0",
+            homeReps = if (FitData.validReps(draft.homeReps)) draft.homeReps.trim() else "25",
+            homeSets = if (FitData.validReps(draft.homeSets)) draft.homeSets.trim() else "3").toJson()
+        values.keys().forEach { key -> updated.put(key, values.get(key)) }
+        val exercises = array("exercises")
+        val index = (0 until exercises.length()).firstOrNull { exercises.getJSONObject(it).optString("id") == id }
+        if (index == null) exercises.put(updated) else exercises.put(index, updated)
+        // Plans/logs are snapshots: editing a target does not rewrite an ongoing workout or history.
+        return id
+    }
+
+    fun deleteExercise(id: String, today: LocalDate) {
+        val exercises = array("exercises")
+        for (i in exercises.length() - 1 downTo 0) {
+            if (exercises.getJSONObject(i).optString("id") == id) exercises.remove(i)
+        }
+        val plans = array("plan")
+        for (i in plans.length() - 1 downTo 0) {
+            val p = plans.getJSONObject(i)
+            if (p.optString("id") == id && p.optString("date") >= today.toString()) plans.remove(i)
+        }
+    }
+
     fun choices(place: String): List<ExerciseChoice> = objects("exercises")
         .filter { place != "집" || it.optBoolean("home") }
         .sortedBy { exercise -> objects("logs").filter { it.optString("id") == exercise.optString("id") }

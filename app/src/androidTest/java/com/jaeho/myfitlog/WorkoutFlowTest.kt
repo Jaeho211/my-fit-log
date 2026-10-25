@@ -53,10 +53,16 @@ class WorkoutFlowTest {
         rule.activityRule.scenario.onActivity { assertEquals(0, FitRepository(it).read().getJSONArray("logs").length()) }
     }
 
-    @Test fun legacyExerciseManagementReturnsToComposeHome() {
+    @Test fun exerciseLibraryHistoryAndLegacySettingsReturnToHome() {
         rule.onNodeWithText("내 운동").performClick()
-        onView(withText("내가 배운 운동 1개")).check(matches(isDisplayed()))
-        onView(withContentDescription("오늘 탭")).perform(click())
+        rule.onNodeWithText("내가 배운 운동 1개 · 목표와 자세를 한곳에").assertIsDisplayed()
+        rule.onNodeWithText("기록").performClick()
+        rule.onNodeWithText("첫 기록을 기다리고 있어요").assertIsDisplayed()
+        rule.onNodeWithContentDescription("설정 열기").performClick()
+        onView(withText("재호 · 1986년생")).check(matches(isDisplayed()))
+        onView(withContentDescription("기록 탭")).perform(click())
+        rule.onNodeWithText("첫 기록을 기다리고 있어요").assertIsDisplayed()
+        rule.onNodeWithText("오늘").performClick()
         rule.onNodeWithText("운동 시작").assertIsDisplayed()
     }
 

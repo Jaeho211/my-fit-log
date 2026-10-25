@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -19,6 +18,24 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun FitApp(model: FitViewModel, onLegacy: (String) -> Unit) {
+    val navigate: (String) -> Unit = { route ->
+        if (route in listOf("오늘", "운동", "기록", "예약")) model.navigate(route) else onLegacy(route)
+    }
+    if (model.section == "예약") {
+        AppointmentScreen(model.appointments, model.error, model::saveAppointment, model::deleteAppointment,
+            model::clearError, navigate)
+        return
+    }
+    if (model.section == "기록") {
+        HistoryScreen(model.history, model.summary.date, model.error, model::deleteHistoryRecord,
+            model::clearError, navigate)
+        return
+    }
+    if (model.section == "운동") {
+        ExerciseLibrary(model.exercises, model.error, model::saveExercise, model::deleteExercise,
+            model::clearError, onNavigate = navigate)
+        return
+    }
     val active = model.active
     var editPlan by rememberSaveable { mutableStateOf(false) }
     var removePlan by rememberSaveable { mutableStateOf(false) }
@@ -64,16 +81,7 @@ fun FitApp(model: FitViewModel, onLegacy: (String) -> Unit) {
         },
         bottomBar = {
             if (active == null) {
-                NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
-                    listOf(Triple("오늘", "오늘", Icons.Default.Home),
-                        Triple("기록", "기록", Icons.Default.Refresh),
-                        Triple("운동", "내 운동", Icons.AutoMirrored.Filled.List),
-                        Triple("예약", "PT", Icons.Default.DateRange)).forEach { (route, label, icon) ->
-                        NavigationBarItem(selected = route == "오늘", onClick = {
-                            if (route != "오늘") onLegacy(route)
-                        }, icon = { Icon(icon, null) }, label = { Text(label) })
-                    }
-                }
+                FitNavigation("오늘", navigate)
             } else {
                 Surface(color = MaterialTheme.colorScheme.surface, tonalElevation = 1.dp) {
                     Column(Modifier.navigationBarsPadding().windowInsetsPadding(
@@ -111,7 +119,7 @@ fun FitApp(model: FitViewModel, onLegacy: (String) -> Unit) {
             .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
         if (active == null) {
             TodayScreen(summary, model.error, modifier, model::open,
-                onEdit = { editPlan = true }, onAdd = { onLegacy("운동") }, onAppointments = { onLegacy("예약") })
+                onEdit = { editPlan = true }, onAdd = { model.navigate("운동") }, onAppointments = { model.navigate("예약") })
         } else {
             WorkoutScreen(active, sets, model.previous, model.kg, model.reps, model.memo,
                 isRecording, modifier, model::editKg, model::editReps, model::editMemo,
@@ -120,7 +128,7 @@ fun FitApp(model: FitViewModel, onLegacy: (String) -> Unit) {
     }
     if (editPlan) {
         PlanEditor(summary, model::choices, onDismiss = { editPlan = false }, onAdd = {
-            editPlan = false; onLegacy("운동")
+            editPlan = false; model.navigate("운동")
         }, onApply = { place, ids ->
             model.applyPlan(place, ids, summary.date)
             if (model.error == null) editPlan = false

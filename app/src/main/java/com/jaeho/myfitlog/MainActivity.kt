@@ -18,6 +18,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        ReminderScheduler.schedule(this)
+        if (savedInstanceState == null && intent.hasExtra("section")) model.navigate(intent.getStringExtra("section") ?: "오늘")
         setContent {
             FitTheme {
                 FitApp(model) { destination ->
@@ -31,5 +33,11 @@ class MainActivity : ComponentActivity() {
                 while (true) { delay(30_000); model.refreshDate() }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        model.refresh()
+        model.navigate(intent.getStringExtra("section") ?: "오늘")
     }
 }
