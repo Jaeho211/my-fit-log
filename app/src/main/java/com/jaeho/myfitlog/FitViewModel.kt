@@ -81,6 +81,8 @@ class FitViewModel(application: Application, private val saved: SavedStateHandle
     }
     fun deleteExercise(id: String): Boolean = mutate { data.deleteExercise(id, LocalDate.now()) }
     fun deleteHistoryRecord(key: HistoryKey): Boolean = mutate { data.deleteHistoryRecord(key) }
+    fun deletePtHistoryGroup(group: HistoryGroup): Boolean = mutate { data.deletePtHistoryGroup(group) }
+
     fun saveAppointment(draft: AppointmentDraft): Int? {
         var id: Int? = null
         val success = mutate { id = data.saveAppointment(draft, System.currentTimeMillis()) }
