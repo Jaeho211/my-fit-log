@@ -76,6 +76,31 @@ class WorkoutFlowTest {
         }
     }
 
+    @Test fun clearingAllCheckedExercisesRemovesTodaysPlan() {
+        rule.onNodeWithText("루틴 편집").performClick()
+        rule.onNodeWithText("모두 해제").performClick()
+        rule.onNodeWithText("오늘 루틴 비우기").assertIsDisplayed().performClick()
+        rule.onNodeWithText("오늘 루틴을 모두 비울까요?").assertIsDisplayed()
+        rule.onNodeWithText("모두 비우기").performClick()
+        rule.activityRule.scenario.onActivity {
+            val data = FitData(FitRepository(it).read())
+            assertEquals(0, data.plans(LocalDate.now()).size)
+            assertEquals(1, data.exercises().size)
+        }
+        rule.onNodeWithText("오늘 할 운동").assertDoesNotExist()
+        rule.onNodeWithText("오늘 루틴 구성").assertIsDisplayed()
+    }
+
+    @Test fun cancellingClearAllKeepsTodaysPlan() {
+        rule.onNodeWithText("루틴 편집").performClick()
+        rule.onNodeWithText("모두 해제").performClick()
+        rule.onNodeWithText("오늘 루틴 비우기").performClick()
+        rule.onNodeWithText("취소").performClick()
+        rule.activityRule.scenario.onActivity {
+            assertEquals(1, FitData(FitRepository(it).read()).plans(LocalDate.now()).size)
+        }
+    }
+
     @Test fun ptRecordsAllSetsWithoutStartingAWorkout() {
         rule.onNodeWithText("PT 운동 기록하기").performClick()
         rule.onNodeWithText("기록할 운동을 선택하세요").performClick()
