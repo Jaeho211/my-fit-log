@@ -24,7 +24,8 @@ fun FitApp(model: FitViewModel, onLegacy: (String) -> Unit) {
     if (model.section == "PT기록") {
         val ptToday = model.history.firstOrNull { it.date == model.summary.date }
             ?.groups?.filter { it.place == "PT" }.orEmpty()
-        PtRecordScreen(model.summary.date, model.exercises, ptToday, model.error, model::recordPt, navigate)
+        PtRecordScreen(model.summary.date, model.exercises, ptToday, model.error, model::recordPt, navigate,
+            onDelete = model::deletePtHistoryGroup)
         return
     }
     if (model.section == "예약") {

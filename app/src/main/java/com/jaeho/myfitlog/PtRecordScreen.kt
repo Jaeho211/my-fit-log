@@ -27,6 +27,7 @@ import java.time.format.DateTimeFormatter
 internal fun PtRecordScreen(
     date: LocalDate, exercises: List<ExerciseDraft>, today: List<HistoryGroup>, error: String?,
     onSave: (String, String, String, String, String) -> Boolean, onNavigate: (String) -> Unit,
+    onDelete: (HistoryGroup) -> Boolean,
 ) {
     var selectedId by rememberSaveable { mutableStateOf("") }
     var kg by rememberSaveable { mutableStateOf("") }
@@ -35,6 +36,8 @@ internal fun PtRecordScreen(
     var memo by rememberSaveable { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
     var lastSaved by rememberSaveable { mutableStateOf("") }
+    var deletingGroupKey by rememberSaveable { mutableStateOf("") }
+    val deletingGroup = today.firstOrNull { it.key == deletingGroupKey }
     val selected = exercises.firstOrNull { it.id == selectedId }
     val focus = LocalFocusManager.current
     val back = { focus.clearFocus(); onNavigate("오늘") }
@@ -169,11 +172,19 @@ internal fun PtRecordScreen(
                             fontWeight = FontWeight.Bold)
                         today.forEachIndexed { index, group ->
                             if (index > 0) HorizontalDivider()
-                            Text("${group.name} · ${group.records.size}세트", fontWeight = FontWeight.SemiBold)
-                            val last = group.records.last()
-                            Text("${weightLabel(last.kg)} · ${repsLabel(last.reps)}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Text("${group.name} · ${group.records.size}세트", fontWeight = FontWeight.SemiBold)
+                                    val last = group.records.last()
+                                    Text("${weightLabel(last.kg)} · ${repsLabel(last.reps)}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                TextButton(onClick = { deletingGroupKey = group.key }) {
+                                    Text("전체 삭제", color = MaterialTheme.colorScheme.error)
+                                }
+                            }
                         }
                         TextButton(onClick = { onNavigate("기록") }) { Text("전체 기록 보기") }
                     }
@@ -181,4 +192,30 @@ internal fun PtRecordScreen(
             }
         }
     }
+    if (deletingGroup != null) AlertDialog(
+        onDismissRequest = { deletingGroupKey = "" },
+        title = { Text("${deletingGroup.name} 기록 삭제") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("${deletingGroup.date}에 기록한 ${deletingGroup.name}의 PT ${deletingGroup.records.size}세트를 모두 삭제합니다. 같은 날 여러 번 기록했다면 모두 삭제되며, 다른 운동 기록은 유지됩니다.")
+                Text("삭제한 기록은 되돌릴 수 없습니다.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall)
+                error?.let { Text(it, color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall) }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                val deletedName = deletingGroup.name
+                if (onDelete(deletingGroup)) {
+                    deletingGroupKey = ""
+                    lastSaved = "${deletedName} PT 기록을 삭제했어요"
+                }
+            }) { Text("기록 전체 삭제", color = MaterialTheme.colorScheme.error) }
+        },
+        dismissButton = {
+            TextButton(onClick = { deletingGroupKey = "" }) { Text("취소") }
+        },
+    )
 }

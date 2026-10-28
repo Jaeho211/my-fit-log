@@ -105,6 +105,49 @@ class FitDataTest {
         assertEquals(1, data.json.getInt("version"))
     }
 
+    @Test fun ptRemovalPreservesOtherExercise() {
+        val data = fixture()
+        data.recordPt("curl", "4", "25", "3", "", time(today))
+        data.recordPt("pull", "15", "12", "2", "", time(today))
+        val chosen = data.history().single { it.date == today }.groups.single { it.exerciseId == "curl" }
+        data.deletePtHistoryGroup(chosen)
+        assertEquals(2, data.json.getJSONArray("logs").length())
+        assertEquals("pull", data.history().single { it.date == today }.groups.single().exerciseId)
+    }
+
+    @Test fun ptRemovalPreservesOtherDatesAndRoutine() {
+        val data = fixture()
+        data.recordPt("curl", "4", "25", "3", "", time(today))
+        data.recordPt("curl", "4", "25", "2", "", time(today.minusDays(1)))
+        val plan = data.plans(today).single()
+        data.record(plan, "20", "12", "", 0, time(today))
+        val beforePlan = data.json.getJSONArray("plan").toString()
+        val beforeAppointments = data.json.getJSONArray("appointments").toString()
+        val selected = data.history().first { it.date == today }.groups.single { it.place == "PT" }
+        data.deletePtHistoryGroup(selected)
+        assertEquals(3, data.json.getJSONArray("logs").length())
+        assertEquals(2, data.history().first { it.date == today.minusDays(1) }.groups.single().records.size)
+        assertEquals(1, data.sets(plan).size)
+        assertEquals(beforePlan, data.json.getJSONArray("plan").toString())
+        assertEquals(beforeAppointments, data.json.getJSONArray("appointments").toString())
+    }
+
+    @Test fun ptRemovalRejectsStaleSelectionAndGymGroup() {
+        val data = fixture()
+        data.recordPt("curl", "4", "25", "3", "", time(today))
+        val chosen = data.history().single { it.date == today }.groups.single()
+        data.recordPt("curl", "4", "25", "1", "", time(today))
+        val before = data.json.toString()
+        assertThrows(IllegalArgumentException::class.java) { data.deletePtHistoryGroup(chosen) }
+        assertEquals(before, data.json.toString())
+        val plan = data.plans(today).single()
+        data.record(plan, "20", "12", "", 0, time(today))
+        val gym = data.history().first { it.date == today }.groups.single { it.place == "헬스장" }
+        val current = data.json.toString()
+        assertThrows(IllegalArgumentException::class.java) { data.deletePtHistoryGroup(gym) }
+        assertEquals(current, data.json.toString())
+    }
+
     @Test fun invalidPtRecordDoesNotWritePartialSets() {
         val data = fixture()
         listOf("0", "101", "-1", "abc").forEach { count ->
