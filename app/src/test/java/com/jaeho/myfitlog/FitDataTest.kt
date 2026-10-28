@@ -115,6 +115,22 @@ class FitDataTest {
         assertEquals("pull", data.history().single { it.date == today }.groups.single().exerciseId)
     }
 
+    @Test fun ptRemovalRejectsStaleSelectionAndGymGroup() {
+        val data = fixture()
+        data.recordPt("curl", "4", "25", "3", "", time(today))
+        val chosen = data.history().single { it.date == today }.groups.single()
+        data.recordPt("curl", "4", "25", "1", "", time(today))
+        val before = data.json.toString()
+        assertThrows(IllegalArgumentException::class.java) { data.deletePtHistoryGroup(chosen) }
+        assertEquals(before, data.json.toString())
+        val plan = data.plans(today).single()
+        data.record(plan, "20", "12", "", 0, time(today))
+        val gym = data.history().first { it.date == today }.groups.single { it.place == "헬스장" }
+        val current = data.json.toString()
+        assertThrows(IllegalArgumentException::class.java) { data.deletePtHistoryGroup(gym) }
+        assertEquals(current, data.json.toString())
+    }
+
     @Test fun invalidPtRecordDoesNotWritePartialSets() {
         val data = fixture()
         listOf("0", "101", "-1", "abc").forEach { count ->
