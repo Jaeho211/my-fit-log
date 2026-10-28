@@ -89,6 +89,36 @@ class FitDataTest {
         assertEquals(setOf(today.plusDays(1)), data.summary(time(today.plusDays(1))).trainedDays)
     }
 
+    @Test fun ptCanBeRecordedAsMultipleSetsWithoutAWorkoutPlan() {
+        val data = fixture()
+        val plansBefore = data.json.getJSONArray("plan").toString()
+        data.recordPt("curl", "4", "25", "3", "트레이너 지도", time(today))
+        data.recordPt("pull", "", "", "3", "무게와 횟수 미확인", time(today))
+        val records = data.history().single { it.date == today }.groups.filter { it.place == "PT" }
+        assertEquals(2, records.size)
+        assertEquals(6, records.sumOf { it.records.size })
+        assertEquals(3, records.single { it.name == "덤벨 컬" }.records.size)
+        val unknown = records.single { it.name == "랫풀다운" }.records
+        assertTrue(unknown.all { it.kg.isBlank() && it.reps.isBlank() })
+        assertEquals(plansBefore, data.json.getJSONArray("plan").toString())
+        assertEquals(setOf(today), data.summary(time(today)).trainedDays)
+        assertEquals(1, data.json.getInt("version"))
+    }
+
+    @Test fun invalidPtRecordDoesNotWritePartialSets() {
+        val data = fixture()
+        listOf("0", "101", "-1", "abc").forEach { count ->
+            assertThrows(IllegalArgumentException::class.java) {
+                data.recordPt("curl", "4", "25", count, "", time(today))
+            }
+        }
+        assertThrows(IllegalArgumentException::class.java) { data.recordPt("missing", "4", "25", "3", "", time(today)) }
+        assertThrows(IllegalArgumentException::class.java) { data.recordPt("curl", "NaN", "25", "3", "", time(today)) }
+        assertThrows(IllegalArgumentException::class.java) { data.recordPt("curl", "4", "1.5", "3", "", time(today)) }
+        assertThrows(IllegalArgumentException::class.java) { data.applyPlan(today, "PT", setOf("curl")) }
+        assertEquals(0, data.json.getJSONArray("logs").length())
+    }
+
     @Test fun invalidInputNeverCreatesARecord() {
         val data = fixture(); val p = data.plans(today).single()
         listOf("NaN", "Infinity", "-1", "1001", "").forEach {
