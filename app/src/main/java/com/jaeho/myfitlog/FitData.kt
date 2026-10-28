@@ -174,7 +174,7 @@ class FitData(val json: JSONObject, private val zone: ZoneId = ZoneId.systemDefa
         .map { ExerciseChoice(it.getString("id"), it.optString("name"), it.optString("equipment")) }
 
     fun applyPlan(today: LocalDate, place: String, ids: Set<String>) {
-        require(place in listOf("집", "헬스장", "PT"))
+        require(place in listOf("집", "헬스장"))
         val eligible = choices(place).map { it.id }.toSet()
         require(ids.isNotEmpty() && eligible.containsAll(ids)) { "운동을 하나 이상 선택해 주세요" }
         val replacement = JSONArray()
@@ -206,6 +206,24 @@ class FitData(val json: JSONObject, private val zone: ZoneId = ZoneId.systemDefa
             put("kg", kg.trim()); put("reps", reps.trim()); put("memo", memo.trim()); put("entryId", token)
         })
         return token
+    }
+
+    /** PT sessions are recorded after exercise, without an active routine. */
+    fun recordPt(exerciseId: String, kg: String, reps: String, setCount: String, memo: String, now: Long) {
+        val exercise = objects("exercises").firstOrNull { it.optString("id") == exerciseId }
+        require(exercise != null) { "먼저 내 운동에서 운동을 등록해 주세요" }
+        require(kg.isBlank() || validWeight(kg)) { "무게는 비워 두거나 0~1,000 kg으로 입력해 주세요" }
+        require(reps.isBlank() || validReps(reps)) { "횟수는 비워 두거나 1~1,000의 정수로 입력해 주세요" }
+        val count = setCount.trim().toIntOrNull()
+        require(count != null && count in 1..100) { "세트 수는 1~100의 정수로 입력해 주세요" }
+        val logs = array("logs")
+        repeat(count) {
+            logs.put(JSONObject().apply {
+                put("time", now); put("id", exerciseId); put("name", exercise.optString("name"))
+                put("place", "PT"); put("kg", kg.trim()); put("reps", reps.trim())
+                put("memo", memo.trim()); put("entryId", UUID.randomUUID().toString())
+            })
+        }
     }
 
     fun hasEntry(token: String): Boolean = token.isNotBlank() && objects("logs").any { it.optString("entryId") == token }
