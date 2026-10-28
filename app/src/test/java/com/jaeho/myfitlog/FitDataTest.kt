@@ -77,6 +77,34 @@ class FitDataTest {
         assertThrows(IllegalArgumentException::class.java) { data.applyPlan(today, "집", setOf("pull")) }
     }
 
+    @Test fun emptySelectionClearsTodaysPlanWithoutDeletingPerformedSets() {
+        val data = fixture()
+        val current = data.plans(today).single()
+        data.record(current, "20", "12", "완료한 세트", 0, time(today))
+        val previousLogs = data.json.getJSONArray("logs").toString()
+        val previousAppointments = data.json.getJSONArray("appointments").toString()
+        val tomorrow = data.plans(today.plusDays(1)).map { it.key.value }
+        val exerciseCount = data.exercises().size
+
+        data.applyPlan(today, "헬스장", emptySet())
+
+        assertTrue(data.plans(today).isEmpty())
+        assertEquals(tomorrow, data.plans(today.plusDays(1)).map { it.key.value })
+        assertEquals(previousLogs, data.json.getJSONArray("logs").toString())
+        assertEquals(previousAppointments, data.json.getJSONArray("appointments").toString())
+        assertEquals(exerciseCount, data.exercises().size)
+        assertTrue(today in data.summary(time(today)).trainedDays)
+        assertTrue(data.json.getJSONArray("plan").length() == 1)
+    }
+
+    @Test fun selectingASubsetStillReplacesTodaysPlan() {
+        val data = fixture()
+        data.applyPlan(today, "헬스장", setOf("pull", "curl"))
+        assertEquals(2, data.plans(today).size)
+        data.applyPlan(today, "헬스장", setOf("pull"))
+        assertEquals(listOf("pull"), data.plans(today).map { it.key.id })
+    }
+
     @Test fun weeklyCountUsesDistinctDaysAndMondayBoundary() {
         val data = fixture(); val logs = data.json.getJSONArray("logs")
         listOf(today.minusDays(7), today.minusDays(6), today.minusDays(6), today, today.plusDays(1)).forEach {
