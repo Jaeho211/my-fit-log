@@ -19,6 +19,7 @@ internal fun PlanEditor(summary: TodaySummary, choices: (String) -> List<Exercis
     var place by rememberSaveable {
         mutableStateOf(summary.plans.firstOrNull()?.key?.place?.takeIf { it == "집" || it == "헬스장" } ?: "집")
     }
+    var confirmClear by rememberSaveable { mutableStateOf(false) }
     val eligible = choices(place)
     var selected by rememberSaveable(place) {
         val existing = summary.plans.filter { it.key.place == place }.map { it.key.id }
@@ -37,6 +38,13 @@ internal fun PlanEditor(summary: TodaySummary, choices: (String) -> List<Exercis
                 TextButton(onClick = onAdd) { Text("내 운동 등록하기") }
             } else {
                 Text("최근에 덜 한 운동부터 표시해요. 최대 3개를 기본 선택합니다.", style = MaterialTheme.typography.bodySmall)
+                TextButton(onClick = { selected = emptyList() }, contentPadding = PaddingValues(0.dp)) {
+                    Text("모두 해제")
+                }
+                if (selected.isEmpty() && summary.plans.isNotEmpty()) {
+                    Text("적용하면 오늘 할 운동을 모두 비웁니다. 이미 완료한 운동 기록은 유지됩니다.",
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
                 eligible.forEach { exercise ->
                     Row(Modifier.fillMaxWidth().toggleable(value = exercise.id in selected, role = Role.Checkbox, onValueChange = { checked ->
                         selected = if (checked) selected + exercise.id else selected - exercise.id
@@ -53,6 +61,25 @@ internal fun PlanEditor(summary: TodaySummary, choices: (String) -> List<Exercis
             error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         }
     }, confirmButton = {
-        TextButton(onClick = { onApply(place, selected.toSet()) }, enabled = selected.isNotEmpty()) { Text("루틴 적용") }
+        TextButton(
+            onClick = {
+                if (selected.isEmpty() && summary.plans.isNotEmpty()) confirmClear = true
+                else onApply(place, selected.toSet())
+            },
+            enabled = selected.isNotEmpty() || summary.plans.isNotEmpty(),
+        ) { Text(if (selected.isEmpty()) "오늘 루틴 비우기" else "루틴 적용") }
     }, dismissButton = { TextButton(onClick = onDismiss) { Text("취소") } })
+
+    if (confirmClear) AlertDialog(
+        onDismissRequest = { confirmClear = false },
+        title = { Text("오늘 루틴을 모두 비울까요?") },
+        text = { Text("오늘 할 운동 ${summary.plans.size}개를 계획에서 제외합니다. 이미 완료한 운동 기록과 내 운동 목록은 그대로 유지됩니다.") },
+        confirmButton = {
+            TextButton(onClick = {
+                confirmClear = false
+                onApply(place, emptySet())
+            }) { Text("모두 비우기", color = MaterialTheme.colorScheme.error) }
+        },
+        dismissButton = { TextButton(onClick = { confirmClear = false }) { Text("취소") } },
+    )
 }
