@@ -105,6 +105,16 @@ class FitDataTest {
         assertEquals(1, data.json.getInt("version"))
     }
 
+    @Test fun ptRemovalPreservesOtherExercise() {
+        val data = fixture()
+        data.recordPt("curl", "4", "25", "3", "", time(today))
+        data.recordPt("pull", "15", "12", "2", "", time(today))
+        val chosen = data.history().single { it.date == today }.groups.single { it.exerciseId == "curl" }
+        data.deletePtHistoryGroup(chosen)
+        assertEquals(2, data.json.getJSONArray("logs").length())
+        assertEquals("pull", data.history().single { it.date == today }.groups.single().exerciseId)
+    }
+
     @Test fun invalidPtRecordDoesNotWritePartialSets() {
         val data = fixture()
         listOf("0", "101", "-1", "abc").forEach { count ->
