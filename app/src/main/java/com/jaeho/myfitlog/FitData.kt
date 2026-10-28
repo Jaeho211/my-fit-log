@@ -133,6 +133,17 @@ class FitData(val json: JSONObject, private val zone: ZoneId = ZoneId.systemDefa
         group.records.map { it.key.index }.sortedDescending().forEach(logs::remove)
     }
 
+    /** Delete one exercise's PT sets for the selected day, with stale-record protection. */
+    fun deletePtHistoryGroup(group: HistoryGroup) {
+        require(group.place == "PT" && group.records.isNotEmpty()) { "PT 운동 기록만 전체 삭제할 수 있어요" }
+        val current = history().flatMap { it.groups }.firstOrNull { it.key == group.key }
+        require(current != null && current.records.map { it.key } == group.records.map { it.key }) {
+            "운동 기록이 변경됐어요. 목록을 다시 확인해 주세요"
+        }
+        val logs = array("logs")
+        group.records.map { it.key.index }.sortedDescending().forEach(logs::remove)
+    }
+
     fun deleteHistoryRecord(key: HistoryKey) {
         val logs = array("logs")
         require(historyDigest(logs.toString()) == key.snapshot && key.index in 0 until logs.length() &&
