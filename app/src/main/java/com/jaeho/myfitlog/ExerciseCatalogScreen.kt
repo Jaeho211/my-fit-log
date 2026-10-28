@@ -40,7 +40,7 @@ internal fun ExerciseCatalogScreen(exercises: List<ExerciseDraft>, modifier: Mod
         item {
             ExerciseSearch(query, { query = it }, "운동 이름 · 부위 · 장비 검색")
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf("전체", "팔", "어깨", "등", "가슴", "철봉").forEach { name ->
+                listOf("전체", "팔", "어깨", "등", "가슴", "복부", "철봉").forEach { name ->
                     FilterChip(selected = category == name, onClick = { category = name }, label = { Text(name) })
                 }
             }

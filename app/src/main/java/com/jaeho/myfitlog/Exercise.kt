@@ -58,4 +58,5 @@ val ExerciseCatalog = listOf(
     CatalogExercise("덤벨 플로어 프레스", "가슴", "덤벨"), CatalogExercise("푸시업", "가슴", "맨몸"),
     CatalogExercise("풀업", "철봉", "철봉"), CatalogExercise("친업", "철봉", "철봉"),
     CatalogExercise("스캐풀라 풀업", "철봉", "철봉"),
+    CatalogExercise("라잉 레그 레이즈", "복부", "맨몸"),
 )
