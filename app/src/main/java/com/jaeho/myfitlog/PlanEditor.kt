@@ -16,7 +16,9 @@ import androidx.compose.ui.unit.dp
 @Composable
 internal fun PlanEditor(summary: TodaySummary, choices: (String) -> List<ExerciseChoice>,
                        onDismiss: () -> Unit, onAdd: () -> Unit, onApply: (String, Set<String>) -> Unit, error: String?) {
-    var place by rememberSaveable { mutableStateOf(summary.plans.firstOrNull()?.key?.place ?: "집") }
+    var place by rememberSaveable {
+        mutableStateOf(summary.plans.firstOrNull()?.key?.place?.takeIf { it == "집" || it == "헬스장" } ?: "집")
+    }
     val eligible = choices(place)
     var selected by rememberSaveable(place) {
         val existing = summary.plans.filter { it.key.place == place }.map { it.key.id }
@@ -26,7 +28,7 @@ internal fun PlanEditor(summary: TodaySummary, choices: (String) -> List<Exercis
         Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("장소와 운동을 선택한 뒤 적용하세요. 수행 기록은 유지됩니다.")
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf("집", "헬스장", "PT").forEach { name ->
+                listOf("집", "헬스장").forEach { name ->
                     FilterChip(selected = place == name, onClick = { place = name }, label = { Text(name) })
                 }
             }
