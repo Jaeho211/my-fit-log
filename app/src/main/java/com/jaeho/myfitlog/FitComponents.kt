@@ -17,4 +17,4 @@ internal fun weightLabel(value: String) = when {
     value.toDoubleOrNull() == 0.0 -> "맨몸"
     else -> "$value kg"
 }
-internal fun repsLabel(value: String) = if (value.isBlank()) "횟수 미기록" else "$value회"
+internal fun repsLabel(value: String) = if (value.isBlank()) "횟수 미기록" else "${value}회"
