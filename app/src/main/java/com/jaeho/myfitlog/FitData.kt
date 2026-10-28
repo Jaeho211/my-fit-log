@@ -187,7 +187,7 @@ class FitData(val json: JSONObject, private val zone: ZoneId = ZoneId.systemDefa
     fun applyPlan(today: LocalDate, place: String, ids: Set<String>) {
         require(place in listOf("집", "헬스장"))
         val eligible = choices(place).map { it.id }.toSet()
-        require(ids.isNotEmpty() && eligible.containsAll(ids)) { "운동을 하나 이상 선택해 주세요" }
+        require(eligible.containsAll(ids)) { "등록한 운동만 선택할 수 있어요" }
         val replacement = JSONArray()
         objects("plan").filter { it.optString("date") != today.toString() }.forEach(replacement::put)
         objects("exercises").filter { it.optString("id") in ids }.forEach { e ->
