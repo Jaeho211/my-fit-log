@@ -71,7 +71,7 @@ class FitViewModel(application: Application, private val saved: SavedStateHandle
     fun home() { section = "오늘"; saved["section"] = "오늘"; active = null; saved["active"] = ""; error = null }
     fun navigate(destination: String) {
         home()
-        section = if (destination in listOf("운동", "기록", "예약")) destination else "오늘"
+        section = if (destination in listOf("운동", "기록", "예약", "PT기록")) destination else "오늘"
         saved["section"] = section
     }
     fun saveExercise(draft: ExerciseDraft): String? {
@@ -99,6 +99,16 @@ class FitViewModel(application: Application, private val saved: SavedStateHandle
             home()
         }
     }
+    private var lastPtRecordAt = 0L
+    fun recordPt(exerciseId: String, kg: String, reps: String, setCount: String, memo: String): Boolean {
+        val elapsed = android.os.SystemClock.elapsedRealtime()
+        if (elapsed - lastPtRecordAt < 650L) return false
+        return mutate {
+            data.recordPt(exerciseId, kg, reps, setCount, memo, System.currentTimeMillis())
+            lastPtRecordAt = elapsed
+        }
+    }
+
     private var lastRecordAt = 0L
     fun record(expectedCount: Int) {
         val elapsed = android.os.SystemClock.elapsedRealtime()
