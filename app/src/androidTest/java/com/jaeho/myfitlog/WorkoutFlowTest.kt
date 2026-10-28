@@ -94,6 +94,20 @@ class WorkoutFlowTest {
         }
     }
 
+    @Test fun ptGroupCanBeDeletedWithConfirmation() {
+        rule.onNodeWithText("PT 운동 기록하기").performClick()
+        rule.onNodeWithText("기록할 운동을 선택하세요").performClick()
+        rule.onNodeWithText("랫풀다운").performClick()
+        rule.onNodeWithText("PT 기록 저장").performClick()
+        rule.onNodeWithText("전체 삭제").performClick()
+        rule.onNodeWithText("기록 전체 삭제").performClick()
+        rule.activityRule.scenario.onActivity {
+            val data = FitData(FitRepository(it).read())
+            assertEquals(0, data.json.getJSONArray("logs").length())
+            assertEquals("헬스장", data.plans(LocalDate.now()).single().key.place)
+        }
+    }
+
     @Test fun inputAndActiveWorkoutSurviveRecreation() {
         rule.onNodeWithText("운동 시작").performClick()
         rule.onNode(hasSetTextAction() and hasText("무게 kg")).performTextReplacement("18.5")
