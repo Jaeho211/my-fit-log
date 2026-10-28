@@ -115,6 +115,23 @@ class FitDataTest {
         assertEquals("pull", data.history().single { it.date == today }.groups.single().exerciseId)
     }
 
+    @Test fun ptRemovalPreservesOtherDatesAndRoutine() {
+        val data = fixture()
+        data.recordPt("curl", "4", "25", "3", "", time(today))
+        data.recordPt("curl", "4", "25", "2", "", time(today.minusDays(1)))
+        val plan = data.plans(today).single()
+        data.record(plan, "20", "12", "", 0, time(today))
+        val beforePlan = data.json.getJSONArray("plan").toString()
+        val beforeAppointments = data.json.getJSONArray("appointments").toString()
+        val selected = data.history().first { it.date == today }.groups.single { it.place == "PT" }
+        data.deletePtHistoryGroup(selected)
+        assertEquals(3, data.json.getJSONArray("logs").length())
+        assertEquals(2, data.history().first { it.date == today.minusDays(1) }.groups.single().records.size)
+        assertEquals(1, data.sets(plan).size)
+        assertEquals(beforePlan, data.json.getJSONArray("plan").toString())
+        assertEquals(beforeAppointments, data.json.getJSONArray("appointments").toString())
+    }
+
     @Test fun ptRemovalRejectsStaleSelectionAndGymGroup() {
         val data = fixture()
         data.recordPt("curl", "4", "25", "3", "", time(today))
