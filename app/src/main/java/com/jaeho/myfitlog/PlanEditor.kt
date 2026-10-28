@@ -11,6 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -80,6 +81,6 @@ internal fun PlanEditor(summary: TodaySummary, choices: (String) -> List<Exercis
                 onApply(place, emptySet())
             }) { Text("모두 비우기", color = MaterialTheme.colorScheme.error) }
         },
-        dismissButton = { TextButton(onClick = { confirmClear = false }) { Text("취소") } },
+        dismissButton = { TextButton(onClick = { confirmClear = false }, modifier = Modifier.testTag("cancel_clear_plan")) { Text("취소") } },
     )
 }
