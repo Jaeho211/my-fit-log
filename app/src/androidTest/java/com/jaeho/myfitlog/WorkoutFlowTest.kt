@@ -95,7 +95,7 @@ class WorkoutFlowTest {
         rule.onNodeWithText("루틴 편집").performClick()
         rule.onNodeWithText("모두 해제").performClick()
         rule.onNodeWithText("오늘 루틴 비우기").performClick()
-        rule.onNodeWithText("취소").performClick()
+        rule.onNodeWithTag("cancel_clear_plan").performClick()
         rule.activityRule.scenario.onActivity {
             assertEquals(1, FitData(FitRepository(it).read()).plans(LocalDate.now()).size)
         }
