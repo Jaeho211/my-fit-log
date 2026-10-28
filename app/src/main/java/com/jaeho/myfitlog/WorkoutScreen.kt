@@ -42,7 +42,7 @@ internal fun WorkoutScreen(p: ExercisePlan, sets: List<SetEntry>, previous: SetE
                     Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                         Text("지난 기록 · ${formatTime(last.time, "M월 d일")}", style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text("${weightLabel(last.kg)} × ${last.reps}회", fontWeight = FontWeight.Bold)
+                        Text("${weightLabel(last.kg)} × ${repsLabel(last.reps)}", fontWeight = FontWeight.Bold)
                     }
                 }
             }

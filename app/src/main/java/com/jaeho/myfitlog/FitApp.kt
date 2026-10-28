@@ -19,11 +19,17 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun FitApp(model: FitViewModel, onLegacy: (String) -> Unit) {
     val navigate: (String) -> Unit = { route ->
-        if (route in listOf("오늘", "운동", "기록", "예약")) model.navigate(route) else onLegacy(route)
+        if (route in listOf("오늘", "운동", "기록", "예약", "PT기록")) model.navigate(route) else onLegacy(route)
+    }
+    if (model.section == "PT기록") {
+        val ptToday = model.history.firstOrNull { it.date == model.summary.date }
+            ?.groups?.filter { it.place == "PT" }.orEmpty()
+        PtRecordScreen(model.summary.date, model.exercises, ptToday, model.error, model::recordPt, navigate)
+        return
     }
     if (model.section == "예약") {
         AppointmentScreen(model.appointments, model.error, model::saveAppointment, model::deleteAppointment,
-            model::clearError, navigate)
+            model::clearError, navigate, onPtRecord = { navigate("PT기록") })
         return
     }
     if (model.section == "기록") {
@@ -118,8 +124,10 @@ fun FitApp(model: FitViewModel, onLegacy: (String) -> Unit) {
         val modifier = Modifier.padding(padding).consumeWindowInsets(padding)
             .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
         if (active == null) {
-            TodayScreen(summary, model.error, modifier, model::open,
-                onEdit = { editPlan = true }, onAdd = { model.navigate("운동") }, onAppointments = { model.navigate("예약") })
+            TodayScreen(summary, model.error, modifier, onOpen = { p ->
+                if (p.key.place == "PT") navigate("PT기록") else model.open(p)
+            }, onEdit = { editPlan = true }, onAdd = { model.navigate("운동") },
+                onAppointments = { model.navigate("예약") }, onPtRecord = { navigate("PT기록") })
         } else {
             WorkoutScreen(active, sets, model.previous, model.kg, model.reps, model.memo,
                 isRecording, modifier, model::editKg, model::editReps, model::editMemo,

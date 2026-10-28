@@ -34,7 +34,8 @@ import org.json.JSONObject
 
 @Composable
 internal fun AppointmentScreen(appointments: List<PtAppointment>, error: String?, onSave: (AppointmentDraft) -> Int?,
-                               onDelete: (Int) -> Boolean, clearError: () -> Unit, onNavigate: (String) -> Unit) {
+                               onDelete: (Int) -> Boolean, clearError: () -> Unit, onNavigate: (String) -> Unit,
+                               onPtRecord: () -> Unit) {
     var page by rememberSaveable { mutableStateOf("list") }
     var selectedId by rememberSaveable { mutableIntStateOf(Int.MIN_VALUE) }
     var editorReturn by rememberSaveable { mutableStateOf("list") }
@@ -128,6 +129,11 @@ internal fun AppointmentScreen(appointments: List<PtAppointment>, error: String?
                     Spacer(Modifier.height(8.dp))
                     Text("예약을 확인하고, 다음 PT를 준비하세요.", style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                item {
+                    OutlinedButton(onClick = onPtRecord, modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp)) {
+                        Text("PT 운동 기록하기")
+                    }
                 }
                 item { NotificationAccessCard(access) }
                 error?.let { item { Text(it, color = MaterialTheme.colorScheme.error) } }
