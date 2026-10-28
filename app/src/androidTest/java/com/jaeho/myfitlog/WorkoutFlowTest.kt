@@ -76,6 +76,24 @@ class WorkoutFlowTest {
         }
     }
 
+    @Test fun ptRecordsAllSetsWithoutStartingAWorkout() {
+        rule.onNodeWithText("PT 운동 기록하기").performClick()
+        rule.onNodeWithText("기록할 운동을 선택하세요").performClick()
+        rule.onNodeWithText("랫풀다운").performClick()
+        rule.onNode(hasSetTextAction() and hasText("무게 kg")).performTextReplacement("24")
+        rule.onNode(hasSetTextAction() and hasText("횟수")).performTextReplacement("15")
+        rule.onNodeWithText("PT 기록 저장").performClick()
+        rule.activityRule.scenario.onActivity {
+            val data = FitData(FitRepository(it).read())
+            val ptLogs = data.history().first { day -> day.date == LocalDate.now() }.groups
+                .flatMap { group -> group.records }.filter { record -> record.place == "PT" }
+            assertEquals(3, ptLogs.size)
+            assertEquals("24", ptLogs.first().kg)
+            assertEquals("15", ptLogs.first().reps)
+            assertEquals("헬스장", data.plans(LocalDate.now()).single().key.place)
+        }
+    }
+
     @Test fun inputAndActiveWorkoutSurviveRecreation() {
         rule.onNodeWithText("운동 시작").performClick()
         rule.onNode(hasSetTextAction() and hasText("무게 kg")).performTextReplacement("18.5")
