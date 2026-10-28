@@ -23,11 +23,12 @@ import java.time.format.DateTimeFormatter
 @Composable
 internal fun TodayScreen(summary: TodaySummary, error: String?, modifier: Modifier,
                         onOpen: (ExercisePlan) -> Unit, onEdit: () -> Unit,
-                        onAdd: () -> Unit, onAppointments: () -> Unit) {
+                        onAdd: () -> Unit, onAppointments: () -> Unit, onPtRecord: () -> Unit) {
     val plans = summary.plans
     val finished = plans.count { (summary.counts[it.key.value] ?: 0) >= it.sets }
     val allDone = plans.isNotEmpty() && finished == plans.size
     val started = plans.any { (summary.counts[it.key.value] ?: 0) > 0 }
+    val ptOnly = plans.isNotEmpty() && plans.all { it.key.place == "PT" }
     LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(ScreenPadding, 8.dp, ScreenPadding, 24.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)) {
         item {
@@ -43,26 +44,35 @@ internal fun TodayScreen(summary: TodaySummary, error: String?, modifier: Modifi
                 Column(Modifier.fillMaxWidth().padding(22.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(if (plans.isEmpty()) "나의 운동 노트" else plans.map { it.key.place }.distinct().joinToString(" · ") + " · ${plans.size}개 운동",
                         color = Color(0xFFD2EBE5), style = MaterialTheme.typography.labelMedium)
-                    Text(when { allDone -> "오늘 운동을 마쳤어요"; plans.isNotEmpty() -> "오늘의 운동 루틴"
+                    Text(when { ptOnly -> "PT 운동 기록"; allDone -> "오늘 운동을 마쳤어요"; plans.isNotEmpty() -> "오늘의 운동 루틴"
                         summary.exerciseCount == 0 -> "배운 운동부터 담아볼까요?"; else -> "오늘은 어디서 운동할까요?" },
                         style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                    Text(when { allDone -> "${plans.size}개 운동 완료 · 오늘도 수고했어요"
+                    Text(when { ptOnly -> "PT는 운동을 시작하지 않고 수행한 내용을 기록합니다."
+                        allDone -> "${plans.size}개 운동 완료 · 오늘도 수고했어요"
                         plans.isNotEmpty() -> "목표 ${plans.sumOf { it.sets }}세트 · $finished / ${plans.size} 운동 완료"
                         summary.exerciseCount == 0 -> "PT에서 배운 운동과 자세 메모를 저장해 두세요."
                         else -> "장소와 운동을 고르고 나만의 루틴을 시작하세요." },
                         color = Color(0xFFC3D8D4), style = MaterialTheme.typography.bodyMedium)
                     Spacer(Modifier.height(2.dp))
                     Button(onClick = {
-                        if (plans.isEmpty()) { if (summary.exerciseCount == 0) onAdd() else onEdit() }
+                        if (ptOnly) onPtRecord()
+                        else if (plans.isEmpty()) { if (summary.exerciseCount == 0) onAdd() else onEdit() }
                         else onOpen(plans.firstOrNull { (summary.counts[it.key.value] ?: 0) < it.sets } ?: plans.first())
                     }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp), shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB8E8D5), contentColor = Color(0xFF153C35))) {
-                        Text(when { allDone -> "오늘 루틴 살펴보기"; started -> "운동 이어하기"; plans.isNotEmpty() -> "운동 시작"
+                        Text(when { ptOnly -> "PT 기록하기"; allDone -> "오늘 루틴 살펴보기"; started -> "운동 이어하기"; plans.isNotEmpty() -> "운동 시작"
                             summary.exerciseCount == 0 -> "운동 골라 담기"; else -> "오늘 루틴 구성" },
                             modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
                         Icon(Icons.AutoMirrored.Filled.ArrowForward, null, Modifier.size(20.dp))
                     }
                 }
+            }
+        }
+        if (!ptOnly) item {
+            OutlinedButton(onClick = onPtRecord, modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp)) {
+                Icon(Icons.Default.Edit, null, Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("PT 운동 기록하기")
             }
         }
         if (plans.isNotEmpty()) {
@@ -76,7 +86,7 @@ internal fun TodayScreen(summary: TodaySummary, error: String?, modifier: Modifi
                     Column(Modifier.padding(horizontal = 16.dp)) {
                         plans.forEachIndexed { i, p ->
                             if (i > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                            Row(Modifier.fillMaxWidth().clickable { onOpen(p) }.padding(vertical = 18.dp),
+                            Row(Modifier.fillMaxWidth().clickable { if (p.key.place == "PT") onPtRecord() else onOpen(p) }.padding(vertical = 18.dp),
                                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                 Surface(shape = RoundedCornerShape(9.dp), color = MaterialTheme.colorScheme.surfaceVariant) {
                                     Text("%02d".format(i + 1), Modifier.padding(8.dp), style = MaterialTheme.typography.labelMedium)
