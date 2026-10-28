@@ -124,7 +124,7 @@ internal fun HistoryScreen(history: List<HistoryDay>, today: LocalDate, error: S
                                     Text(formatTime(record.time, "a h:mm"), style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
-                                Text("${weightLabel(record.kg)} × ${record.reps}회", style = MaterialTheme.typography.titleMedium,
+                                Text("${weightLabel(record.kg)} × ${repsLabel(record.reps)}", style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.SemiBold)
                                 if (record.memo.isNotBlank()) Text(record.memo, maxLines = 2,
                                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
@@ -143,7 +143,7 @@ internal fun HistoryScreen(history: List<HistoryDay>, today: LocalDate, error: S
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(formatTime(selected.time, "yyyy년 M월 d일 (E) a h:mm:ss"), style = MaterialTheme.typography.bodySmall)
                 Text(selected.place, color = MaterialTheme.colorScheme.primary)
-                Text("${weightLabel(selected.kg)} × ${selected.reps}회", style = MaterialTheme.typography.headlineSmall,
+                Text("${weightLabel(selected.kg)} × ${repsLabel(selected.reps)}", style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold)
                 HorizontalDivider()
                 Text("컨디션 메모", fontWeight = FontWeight.Bold)
@@ -159,7 +159,7 @@ internal fun HistoryScreen(history: List<HistoryDay>, today: LocalDate, error: S
         title = { Text("이 세트 기록을 삭제할까요?") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("${selected.name} · ${number}세트\n${weightLabel(selected.kg)} × ${selected.reps}회\n\n선택한 세트만 삭제합니다. 오늘 루틴의 진행과 주간 달성 일수도 다시 계산됩니다.")
+                Text("${selected.name} · ${number}세트\n${weightLabel(selected.kg)} × ${repsLabel(selected.reps)}\n\n선택한 세트만 삭제합니다. 오늘 루틴의 진행과 주간 달성 일수도 다시 계산됩니다.")
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             }
         },
@@ -181,7 +181,7 @@ private fun HistoryGroupCard(group: HistoryGroup, open: Boolean, onToggle: () ->
                 Text("${group.place} · ${group.records.size}세트", color = MaterialTheme.colorScheme.primary,
                     style = MaterialTheme.typography.labelMedium)
                 Text(group.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text("마지막 세트 ${weightLabel(latest.kg)} × ${latest.reps}회", style = MaterialTheme.typography.bodySmall,
+                Text("마지막 세트 ${weightLabel(latest.kg)} × ${repsLabel(latest.reps)}", style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Icon(if (open) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown, null,
