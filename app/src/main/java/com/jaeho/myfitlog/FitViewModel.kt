@@ -46,7 +46,7 @@ class FitViewModel(application: Application, private val saved: SavedStateHandle
     var restSeconds by mutableStateOf(90)
         private set
     private fun restSettingKey(p: ExercisePlan) = "${p.key.place}:${p.key.id}"
-    fun setRestSeconds(seconds: Int) {
+    fun changeRestSeconds(seconds: Int) {
         restSeconds = seconds.coerceIn(30, 300)
         active?.let { restPreferences.edit().putInt(restSettingKey(it), restSeconds).apply() }
     }

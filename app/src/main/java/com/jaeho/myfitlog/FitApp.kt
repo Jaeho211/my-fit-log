@@ -154,7 +154,7 @@ fun FitApp(model: FitViewModel, onLegacy: (String) -> Unit) {
             WorkoutScreen(active, sets, model.previous, model.kg, model.reps, model.memo,
                 isRecording, modifier, model::editKg, model::editReps, model::editMemo,
                 onExtra = { extraSetFor = progressKey }, onRemove = { removePlan = true },
-                restSeconds = model.restSeconds, onRestSeconds = model::setRestSeconds)
+                restSeconds = model.restSeconds, onRestSeconds = model::changeRestSeconds)
         }
     }
     if (editPlan) {
