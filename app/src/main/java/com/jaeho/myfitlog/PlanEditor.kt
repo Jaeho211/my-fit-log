@@ -46,6 +46,24 @@ internal fun PlanEditor(summary: TodaySummary, choices: (String) -> List<Exercis
                     Text("적용하면 오늘 할 운동을 모두 비웁니다. 이미 완료한 운동 기록은 유지됩니다.",
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
+                if (selected.isNotEmpty()) {
+                    Text("운동 순서", style = MaterialTheme.typography.titleSmall)
+                    selected.forEachIndexed { index, id ->
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Text("${index + 1}. ${eligible.firstOrNull { it.id == id }?.name.orEmpty()}", Modifier.weight(1f))
+                            TextButton(enabled = index > 0, onClick = {
+                                selected = selected.toMutableList().apply {
+                                    val previous = this[index - 1]; this[index - 1] = id; this[index] = previous
+                                }
+                            }) { Text("위로") }
+                            TextButton(enabled = index < selected.lastIndex, onClick = {
+                                selected = selected.toMutableList().apply {
+                                    val next = this[index + 1]; this[index + 1] = id; this[index] = next
+                                }
+                            }) { Text("아래로") }
+                        }
+                    }
+                }
                 eligible.forEach { exercise ->
                     Row(Modifier.fillMaxWidth().toggleable(value = exercise.id in selected, role = Role.Checkbox, onValueChange = { checked ->
                         selected = if (checked) selected + exercise.id else selected - exercise.id

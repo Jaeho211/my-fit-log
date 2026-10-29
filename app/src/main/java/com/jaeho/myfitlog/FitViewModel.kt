@@ -38,6 +38,33 @@ class FitViewModel(application: Application, private val saved: SavedStateHandle
     var error by mutableStateOf<String?>(null)
         private set
 
+    private val restPreferences = application.getSharedPreferences("rest_settings", 0)
+    var restDeadline by mutableStateOf(saved.get<Long>("restDeadline") ?: 0L)
+        private set
+    var restKey by mutableStateOf(saved.get<String>("restKey") ?: "")
+        private set
+    var restSeconds by mutableStateOf(90)
+        private set
+    private fun restSettingKey(p: ExercisePlan) = "${p.key.place}:${p.key.id}"
+    fun setRestSeconds(seconds: Int) {
+        restSeconds = seconds.coerceIn(30, 300)
+        active?.let { restPreferences.edit().putInt(restSettingKey(it), restSeconds).apply() }
+    }
+    fun skipRest() { restDeadline = 0L; saved["restDeadline"] = 0L }
+    fun extendRest() {
+        if (restDeadline > 0L) { restDeadline += 30_000L; saved["restDeadline"] = restDeadline }
+    }
+    fun finishRest(now: Long): Boolean {
+        if (restDeadline == 0L || now < restDeadline) return false
+        skipRest()
+        return true
+    }
+    private fun startRest(p: ExercisePlan) {
+        restKey = p.key.value; saved["restKey"] = restKey
+        restDeadline = System.currentTimeMillis() + restSeconds * 1000L
+        saved["restDeadline"] = restDeadline
+    }
+
     init { refresh() }
 
     fun refresh() {
@@ -50,6 +77,7 @@ class FitViewModel(application: Application, private val saved: SavedStateHandle
             active = summary.plans.firstOrNull { it.key.value == saved.get<String>("active") }
             if (active == null) saved["active"] = ""
             if (!data.hasEntry(undoToken)) { undoToken = ""; saved["undo"] = "" }
+            active?.let { restSeconds = restPreferences.getInt(restSettingKey(it), 90) }
             updateWorkout()
         }.onFailure { error = "저장 데이터를 읽을 수 없습니다. ${it.message.orEmpty()}" }
     }
@@ -59,6 +87,8 @@ class FitViewModel(application: Application, private val saved: SavedStateHandle
         previous = active?.let(data::previous)
     }
     fun open(p: ExercisePlan) {
+        if (restKey != p.key.value) skipRest()
+        restSeconds = restPreferences.getInt(restSettingKey(p), 90)
         active = p
         saved["active"] = p.key.value
         if (saved.get<String>("draft") != p.key.value) {
@@ -116,15 +146,17 @@ class FitViewModel(application: Application, private val saved: SavedStateHandle
         val elapsed = android.os.SystemClock.elapsedRealtime()
         if (elapsed - lastRecordAt < 650L) return
         val p = active ?: return
-        mutate {
+        if (restDeadline > System.currentTimeMillis() && restKey == p.key.value) return
+        val success = mutate {
             val token = data.record(p, kg, reps, memo, expectedCount, System.currentTimeMillis())
             lastRecordAt = elapsed
             undoToken = token; saved["undo"] = token
             editMemo("")
         }
+        if (success && sets.size < p.sets) startRest(p)
     }
     fun undo() {
-        mutate { data.undo(undoToken); undoToken = ""; saved["undo"] = "" }
+        if (mutate { data.undo(undoToken); undoToken = ""; saved["undo"] = "" }) skipRest()
     }
     fun removeActive() {
         val p = active ?: return

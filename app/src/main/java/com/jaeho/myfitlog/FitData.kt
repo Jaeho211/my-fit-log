@@ -190,7 +190,7 @@ class FitData(val json: JSONObject, private val zone: ZoneId = ZoneId.systemDefa
         require(eligible.containsAll(ids)) { "등록한 운동만 선택할 수 있어요" }
         val replacement = JSONArray()
         objects("plan").filter { it.optString("date") != today.toString() }.forEach(replacement::put)
-        objects("exercises").filter { it.optString("id") in ids }.forEach { e ->
+        ids.map { id -> objects("exercises").first { it.optString("id") == id } }.forEach { e ->
             val home = place == "집"
             replacement.put(JSONObject().apply {
                 put("date", today.toString()); put("id", e.getString("id")); put("name", e.optString("name"))

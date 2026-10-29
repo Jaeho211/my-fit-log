@@ -37,6 +37,21 @@ class WorkoutFlowTest {
         rule.waitForIdle()
     }
 
+    @Test fun restTimerSurvivesRecreationAndCanBeSkipped() {
+        rule.onNodeWithText("운동 시작").performClick()
+        rule.onNodeWithText("1세트 완료").performClick()
+        rule.onNodeWithText("다음 세트까지 휴식").assertIsDisplayed()
+        rule.onNodeWithText("휴식 중 · 다음 2세트").assertIsNotEnabled()
+        rule.onNodeWithText("+30초").performClick()
+        rule.activityRule.scenario.recreate()
+        rule.onNodeWithText("다음 세트까지 휴식").assertIsDisplayed()
+        rule.onNodeWithText("휴식 건너뛰기").performClick()
+        rule.onNodeWithText("다음 세트까지 휴식").assertDoesNotExist()
+        rule.onNodeWithText("2세트 완료").assertIsEnabled()
+        rule.onNodeWithText("실행 취소").performClick()
+        rule.onNodeWithText("1세트 완료").assertIsEnabled()
+    }
+
     @Test fun editedSetPersistsAndUndoRemovesIt() {
         rule.onNodeWithText("운동 시작").performClick()
         rule.onNode(hasSetTextAction() and hasText("무게 kg")).performTextReplacement("22.5")

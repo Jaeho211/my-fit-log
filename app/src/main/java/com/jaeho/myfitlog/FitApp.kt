@@ -1,5 +1,6 @@
 package com.jaeho.myfitlog
 
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -43,6 +44,22 @@ fun FitApp(model: FitViewModel, onLegacy: (String) -> Unit) {
             model::clearError, onNavigate = navigate)
         return
     }
+    var now by remember { mutableStateOf(System.currentTimeMillis()) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(model.restDeadline, lifecycle) {
+        lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) {
+            while (model.restDeadline > 0L) {
+                now = System.currentTimeMillis()
+                if (model.finishRest(now)) {
+                    val vibrator = context.getSystemService(android.os.Vibrator::class.java)
+                    vibrator?.vibrate(android.os.VibrationEffect.createOneShot(400, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+                }
+                kotlinx.coroutines.delay(200)
+            }
+        }
+    }
+    val resting = model.restDeadline > 0L && model.restKey == model.active?.key?.value
     val active = model.active
     var editPlan by rememberSaveable { mutableStateOf(false) }
     var removePlan by rememberSaveable { mutableStateOf(false) }
@@ -95,6 +112,10 @@ fun FitApp(model: FitViewModel, onLegacy: (String) -> Unit) {
                         WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
                         .padding(horizontal = ScreenPadding, vertical = 12.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        if (resting) {
+                            RestTimerCard(((model.restDeadline - now + 999) / 1000).coerceAtLeast(0).toInt(),
+                                model::extendRest, model::skipRest)
+                        }
                         if (model.undoToken.isNotEmpty()) {
                             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween) {
@@ -106,14 +127,14 @@ fun FitApp(model: FitViewModel, onLegacy: (String) -> Unit) {
                             style = MaterialTheme.typography.bodySmall) }
                         Button(onClick = {
                             focus.clearFocus()
-                            if (isRecording) model.record(done) else {
+                            if (isRecording && !resting) model.record(done) else {
                                 val next = summary.plans.firstOrNull {
                                     it.key != active.key && (summary.counts[it.key.value] ?: 0) < it.sets
                                 }
                                 if (next == null) model.home() else model.open(next)
                             }
-                        }, modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp), shape = RoundedCornerShape(14.dp)) {
-                            Text(if (isRecording) "${done + 1}세트 완료" else if (summary.plans.any {
+                        }, enabled = !resting, modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp), shape = RoundedCornerShape(14.dp)) {
+                            Text(if (resting) "휴식 중 · 다음 ${done + 1}세트" else if (isRecording) "${done + 1}세트 완료" else if (summary.plans.any {
                                 it.key != active.key && (summary.counts[it.key.value] ?: 0) < it.sets
                             }) "다음 운동으로" else "오늘 루틴으로", fontWeight = FontWeight.Bold)
                         }
@@ -132,7 +153,8 @@ fun FitApp(model: FitViewModel, onLegacy: (String) -> Unit) {
         } else {
             WorkoutScreen(active, sets, model.previous, model.kg, model.reps, model.memo,
                 isRecording, modifier, model::editKg, model::editReps, model::editMemo,
-                onExtra = { extraSetFor = progressKey }, onRemove = { removePlan = true })
+                onExtra = { extraSetFor = progressKey }, onRemove = { removePlan = true },
+                restSeconds = model.restSeconds, onRestSeconds = model::setRestSeconds)
         }
     }
     if (editPlan) {

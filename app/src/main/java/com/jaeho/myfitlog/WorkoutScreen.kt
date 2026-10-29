@@ -22,7 +22,8 @@ import androidx.compose.ui.unit.dp
 internal fun WorkoutScreen(p: ExercisePlan, sets: List<SetEntry>, previous: SetEntry?, kg: String, reps: String,
                           memo: String, recording: Boolean, modifier: Modifier,
                           onKg: (String) -> Unit, onReps: (String) -> Unit, onMemo: (String) -> Unit,
-                          onExtra: () -> Unit, onRemove: () -> Unit) {
+                          onExtra: () -> Unit, onRemove: () -> Unit,
+                          restSeconds: Int = 90, onRestSeconds: (Int) -> Unit = {}) {
     var showNote by rememberSaveable(p.key.value) { mutableStateOf(false) }
     var showMemo by rememberSaveable(p.key.value) { mutableStateOf(false) }
     LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(ScreenPadding, 8.dp, ScreenPadding, 24.dp),
@@ -35,6 +36,17 @@ internal fun WorkoutScreen(p: ExercisePlan, sets: List<SetEntry>, previous: SetE
             Spacer(Modifier.height(12.dp))
             Text(p.name, style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold,
                 modifier = Modifier.semantics { heading() })
+        }
+        item {
+            Text("세트 사이 휴식 · ${restSeconds}초", style = MaterialTheme.typography.titleSmall)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf(60, 90, 120, 180).forEach { seconds ->
+                    FilterChip(selected = restSeconds == seconds, onClick = { onRestSeconds(seconds) },
+                        label = { Text("${seconds}초") })
+                }
+            }
+            Text("목·어깨에 힘이 들어가거나 회복이 덜 됐다면 더 쉬세요.",
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         previous?.let { last ->
             item {
@@ -116,6 +128,21 @@ private fun SetRow(set: String, kg: String, reps: String, status: String, header
                 Text(value, style = if (header) MaterialTheme.typography.labelSmall else MaterialTheme.typography.bodyMedium,
                     color = when { header -> MaterialTheme.colorScheme.onSurfaceVariant
                         completed -> MaterialTheme.colorScheme.primary; else -> MaterialTheme.colorScheme.onSurface })
+            }
+        }
+    }
+}
+
+@Composable
+internal fun RestTimerCard(seconds: Int, onExtend: () -> Unit, onSkip: () -> Unit) {
+    Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.primaryContainer) {
+        Column(Modifier.fillMaxWidth().padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("다음 세트까지 휴식", style = MaterialTheme.typography.labelLarge)
+            Text("%d:%02d".format(seconds / 60, seconds % 60),
+                style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                TextButton(onClick = onExtend) { Text("+30초") }
+                TextButton(onClick = onSkip) { Text("휴식 건너뛰기") }
             }
         }
     }
