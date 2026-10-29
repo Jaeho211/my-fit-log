@@ -53,7 +53,8 @@ fun FitApp(model: FitViewModel, onLegacy: (String) -> Unit) {
                 now = System.currentTimeMillis()
                 if (model.finishRest(now)) {
                     val vibrator = context.getSystemService(android.os.Vibrator::class.java)
-                    vibrator?.vibrate(android.os.VibrationEffect.createOneShot(400, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+                    // Two long pulses make the end of a rest easy to notice.
+                    vibrator?.vibrate(android.os.VibrationEffect.createWaveform(longArrayOf(0, 1000, 300, 1000), -1))
                 }
                 kotlinx.coroutines.delay(200)
             }
