@@ -16,7 +16,12 @@ class ExerciseDataTest {
         assertEquals("3", legacy.effectiveHomeKg)
         assertEquals("25", legacy.homeReps)
         assertEquals("3", legacy.homeSets)
-        assertEquals(22, ExerciseCatalog.size)
+        assertEquals(23, ExerciseCatalog.size)
+        val singleArmKickback = ExerciseCatalog.single { it.name == "Single-arm Dumbbell Kickback" }
+        assertEquals("팔", singleArmKickback.category)
+        assertEquals("덤벨", singleArmKickback.equipment)
+        assertTrue(singleArmKickback.draft().note.contains("좌우 각각 25회"))
+        assertEquals("3", singleArmKickback.draft().kg)
         val legRaise = ExerciseCatalog.single { it.name == "라잉 레그 레이즈" }
         assertEquals("복부", legRaise.category)
         assertEquals("맨몸", legRaise.equipment)
