@@ -10,7 +10,7 @@ data class HistoryKey(val index: Int, val fingerprint: String, val snapshot: Str
 }
 data class HistoryRecord(
     val key: HistoryKey, val exerciseId: String, val name: String, val place: String,
-    val time: Long, val kg: String, val reps: String, val memo: String,
+    val time: Long, val kg: String, val reps: String, val memo: String, val unit: String = "회",
 )
 data class HistoryGroup(val date: LocalDate, val exerciseId: String, val place: String, val records: List<HistoryRecord>) {
     val key: String get() = historyGroupKey(date, exerciseId, place)
