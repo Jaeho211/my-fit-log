@@ -16,12 +16,24 @@ class ExerciseDataTest {
         assertEquals("3", legacy.effectiveHomeKg)
         assertEquals("25", legacy.homeReps)
         assertEquals("3", legacy.homeSets)
-        assertEquals(23, ExerciseCatalog.size)
+        assertEquals(25, ExerciseCatalog.size)
         val singleArmKickback = ExerciseCatalog.single { it.name == "Single-arm Dumbbell Kickback" }
         assertEquals("팔", singleArmKickback.category)
         assertEquals("덤벨", singleArmKickback.equipment)
         assertTrue(singleArmKickback.draft().note.contains("좌우 각각 25회"))
         assertEquals("3", singleArmKickback.draft().kg)
+        val twoArmRow = ExerciseCatalog.single { it.name == "투암 덤벨 로우" }
+        assertEquals("등", twoArmRow.category)
+        assertEquals("덤벨", twoArmRow.equipment)
+        assertEquals("12", twoArmRow.draft().homeReps)
+        assertEquals("2", twoArmRow.draft().homeSets)
+        assertTrue(twoArmRow.draft().home)
+        val deadHang = ExerciseCatalog.single { it.name == "철봉 매달리기" }
+        assertEquals("철봉", deadHang.category)
+        assertEquals("초", deadHang.draft().unit)
+        assertEquals("20", deadHang.draft().homeReps)
+        assertEquals("2", deadHang.draft().homeSets)
+        assertTrue(deadHang.draft().home)
         val legRaise = ExerciseCatalog.single { it.name == "라잉 레그 레이즈" }
         assertEquals("복부", legRaise.category)
         assertEquals("맨몸", legRaise.equipment)
@@ -30,6 +42,24 @@ class ExerciseDataTest {
         assertEquals("3", legRaise.draft().sets)
         ExerciseCatalog.first().draft()
         assertTrue(data.exercises().isEmpty())
+    }
+
+    @Test fun deadHangRecordsSecondsAndKeepsUnitInHistoryAndExport() {
+        val data = data()
+        val id = data.saveExercise(ExerciseCatalog.single { it.name == "철봉 매달리기" }.draft())
+        val restored = FitData(JSONObject(data.json.toString()), ZoneId.of("Asia/Seoul"))
+        assertEquals("초", restored.exercises().single().unit)
+        restored.applyPlan(today, "집", setOf(id))
+        val plan = restored.plans(today).single()
+        assertEquals("초", plan.unit)
+        assertEquals("20", plan.reps)
+        assertEquals(2, plan.sets)
+        val time = today.atTime(12, 0).atZone(ZoneId.of("Asia/Seoul")).toInstant().toEpochMilli()
+        restored.record(plan, "0", "20", "", 0, time)
+        val day = restored.history().single()
+        assertEquals("초", day.groups.single().records.single().unit)
+        assertTrue(workoutConsultationText(listOf(day)).contains("20초 × 1세트"))
+        assertEquals("20초", repsLabel("20", plan.unit))
     }
 
     @Test fun editPreservesIdUnknownFieldsCurrentPlanAndHistoricLogs() {
