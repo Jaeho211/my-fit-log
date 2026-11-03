@@ -146,7 +146,7 @@ internal fun PtRecordScreen(
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                                     modifier = Modifier.weight(1f))
                                 OutlinedTextField(value = reps, onValueChange = { reps = it },
-                                    label = { Text("횟수") }, singleLine = true,
+                                    label = { Text(if (selected?.unit == "초") "시간 (초)" else "횟수") }, singleLine = true,
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                     modifier = Modifier.weight(1f))
                             }
@@ -177,7 +177,7 @@ internal fun PtRecordScreen(
                                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                     Text("${group.name} · ${group.records.size}세트", fontWeight = FontWeight.SemiBold)
                                     val last = group.records.last()
-                                    Text("${weightLabel(last.kg)} · ${repsLabel(last.reps)}",
+                                    Text("${weightLabel(last.kg)} · ${repsLabel(last.reps, last.unit)}",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
