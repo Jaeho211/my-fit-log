@@ -41,14 +41,17 @@ data class ExerciseDraft(
     }
 }
 
-data class CatalogExercise(val name: String, val category: String, val equipment: String) {
-    fun draft() = ExerciseDraft(name = name, equipment = equipment, kg = if (equipment == "덤벨") "3" else "0")
+data class CatalogExercise(val name: String, val category: String, val equipment: String, val note: String = "") {
+    fun draft() = ExerciseDraft(name = name, equipment = equipment, note = note, kg = if (equipment == "덤벨") "3" else "0")
 }
 
 /** Suggestions only; selecting one opens a form and never enrolls it until Save. */
 val ExerciseCatalog = listOf(
     CatalogExercise("덤벨 컬", "팔", "덤벨"), CatalogExercise("해머 컬", "팔", "덤벨"),
-    CatalogExercise("덤벨 킥백", "팔", "덤벨"), CatalogExercise("케이블 푸시다운", "팔", "케이블"),
+    CatalogExercise("덤벨 킥백", "팔", "덤벨"),
+    CatalogExercise("Single-arm Dumbbell Kickback", "팔", "덤벨",
+        "한 팔씩 번갈아 수행. 횟수는 한쪽 팔 기준으로 기록 (좌우 각각 25회 = 25회)."),
+    CatalogExercise("케이블 푸시다운", "팔", "케이블"),
     CatalogExercise("덤벨 숄더 프레스", "어깨", "덤벨"), CatalogExercise("아놀드 프레스", "어깨", "덤벨"),
     CatalogExercise("사이드 레터럴 레이즈", "어깨", "덤벨"), CatalogExercise("리버스 펙덱 플라이", "어깨", "머신"),
     CatalogExercise("랫풀다운", "등", "머신"), CatalogExercise("시티드 케이블 로우", "등", "케이블"),
