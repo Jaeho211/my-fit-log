@@ -1,5 +1,10 @@
 package com.jaeho.myfitlog
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -32,6 +37,16 @@ import java.time.temporal.TemporalAdjusters
 @Composable
 internal fun HistoryScreen(history: List<HistoryDay>, today: LocalDate, error: String?,
                            onDelete: (HistoryKey) -> Boolean, clearError: () -> Unit, onNavigate: (String) -> Unit) {
+    val context = LocalContext.current
+    val copyRecords: (List<HistoryDay>) -> Unit = { selectedDays ->
+        try {
+            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            clipboard.setPrimaryClip(ClipData.newPlainText("GPT 상담용 운동 기록", workoutConsultationText(selectedDays)))
+            Toast.makeText(context, "복사했어요. GPT에 붙여넣어 상담해 보세요", Toast.LENGTH_LONG).show()
+        } catch (_: RuntimeException) {
+            Toast.makeText(context, "복사하지 못했어요. 다시 시도해 주세요", Toast.LENGTH_LONG).show()
+        }
+    }
     var expanded by rememberSaveable { mutableStateOf(emptyList<String>()) }
     var selectedKey by rememberSaveable { mutableStateOf("") }
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
@@ -76,6 +91,14 @@ internal fun HistoryScreen(history: List<HistoryDay>, today: LocalDate, error: S
                     FilterChip(selected = weekOnly, onClick = { weekOnly = true }, label = { Text("이번 주") })
                 }
             }
+            item {
+                OutlinedButton(onClick = { copyRecords(days) }, enabled = days.isNotEmpty(),
+                    modifier = Modifier.fillMaxWidth().testTag("copy_history")) {
+                    Text("GPT 상담용 복사 · ${if (weekOnly) "이번 주" else "전체"}")
+                }
+                Text("날짜·운동·세트별 무게와 횟수·메모를 복사해요",
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
             error?.let { item { Text(it, color = MaterialTheme.colorScheme.error) } }
             if (deleted) item {
                 Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = RoundedCornerShape(12.dp)) {
@@ -100,8 +123,13 @@ internal fun HistoryScreen(history: List<HistoryDay>, today: LocalDate, error: S
                     Column(Modifier.padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(historyDateLabel(day.date, today), style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold, modifier = Modifier.semantics { heading() })
-                        Text("운동 ${day.groups.size}건 · ${day.setCount}세트", style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("운동 ${day.groups.size}건 · ${day.setCount}세트", style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            TextButton(onClick = { copyRecords(listOf(day)) },
+                                modifier = Modifier.testTag("copy_history_${day.date}")) { Text("이 날짜 복사") }
+                        }
                     }
                 }
                 day.groups.forEach { group ->
