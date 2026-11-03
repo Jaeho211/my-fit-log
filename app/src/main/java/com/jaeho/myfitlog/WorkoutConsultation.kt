@@ -12,7 +12,7 @@ internal fun workoutConsultationText(days: List<HistoryDay>): String = buildStri
     }
     appendLine("기록 범위: ${ordered.first().date} ~ ${ordered.last().date}")
     appendLine("운동한 날: ${ordered.size}일 / 총 ${ordered.sumOf { it.setCount }}세트")
-    appendLine("무게는 kg 단위이며 덤벨은 한 개 기준입니다. 0 kg은 기록값이며, 미기록과 구분합니다. 세트 사이 휴식 시간은 이 기록에 포함되어 있지 않습니다.")
+    appendLine("무게는 kg 단위이며 덤벨은 한 개 기준입니다. 기록 단위가 초인 운동은 횟수가 아닌 수행 시간(초)을 의미합니다. 0 kg은 기록값이며, 미기록과 구분합니다. 세트 사이 휴식 시간은 이 기록에 포함되어 있지 않습니다.")
     ordered.forEach { day ->
         appendLine()
         appendLine("## ${day.date} · ${day.setCount}세트")
@@ -23,13 +23,13 @@ internal fun workoutConsultationText(days: List<HistoryDay>): String = buildStri
             group.records.forEach { record ->
                 val previous = runs.lastOrNull()?.last()
                 if (previous != null && previous.kg.trim() == record.kg.trim() &&
-                    previous.reps.trim() == record.reps.trim()) runs.last().add(record)
+                    previous.reps.trim() == record.reps.trim() && previous.unit == record.unit) runs.last().add(record)
                 else runs.add(mutableListOf(record))
             }
             runs.forEach { run ->
                 val record = run.first()
                 val weight = record.kg.trim().takeIf { it.isNotBlank() }?.let { "$it kg" } ?: "무게 미기록"
-                val reps = record.reps.trim().takeIf { it.isNotBlank() }?.let { "${it}회" } ?: "횟수 미기록"
+                val reps = repsLabel(record.reps.trim(), record.unit)
                 appendLine("- $weight × $reps × ${run.size}세트")
             }
             val memos = group.records.map { it.memo.trim() }.filter { it.isNotBlank() }.distinct()
