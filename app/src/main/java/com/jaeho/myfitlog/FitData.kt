@@ -15,10 +15,10 @@ data class PlanKey(val date: String, val id: String, val place: String) {
 
 data class ExercisePlan(
     val key: PlanKey, val name: String, val kg: String, val reps: String,
-    val sets: Int, val note: String,
+    val sets: Int, val note: String, val unit: String = "회",
 )
 data class ExerciseChoice(val id: String, val name: String, val equipment: String)
-data class SetEntry(val token: String, val time: Long, val kg: String, val reps: String, val memo: String)
+data class SetEntry(val token: String, val time: Long, val kg: String, val reps: String, val memo: String, val unit: String = "회")
 data class AppointmentSummary(val time: Long, val note: String)
 data class TodaySummary(
     val date: LocalDate,
@@ -41,7 +41,7 @@ class FitData(val json: JSONObject, private val zone: ZoneId = ZoneId.systemDefa
     private fun plan(p: JSONObject) = ExercisePlan(
         PlanKey(p.getString("date"), p.getString("id"), p.getString("place")),
         p.optString("name"), p.optString("kg", "0"), p.optString("reps", "12"),
-        p.optInt("sets", 3).coerceIn(1, 1000), p.optString("note"),
+        p.optInt("sets", 3).coerceIn(1, 1000), p.optString("note"), p.optString("unit", "회"),
     )
     fun plans(today: LocalDate): List<ExercisePlan> = objects("plan")
         .filter { it.optString("date") == today.toString() }.map(::plan)
@@ -51,7 +51,7 @@ class FitData(val json: JSONObject, private val zone: ZoneId = ZoneId.systemDefa
 
     private fun entry(log: JSONObject) = SetEntry(
         log.optString("entryId"), log.optLong("time"), log.optString("kg"),
-        log.optString("reps"), log.optString("memo"),
+        log.optString("reps"), log.optString("memo"), log.optString("unit", "회"),
     )
     fun sets(p: ExercisePlan): List<SetEntry> = objects("logs")
         .filter { matches(it, p) && date(it.optLong("time")).toString() == p.key.date }
@@ -108,7 +108,8 @@ class FitData(val json: JSONObject, private val zone: ZoneId = ZoneId.systemDefa
             HistoryRecord(HistoryKey(index, historyDigest(log.toString()), snapshot),
                 log.optString("id"), log.optString("name").ifBlank { "이름 없는 운동" },
                 log.optString("place").ifBlank { "장소 미지정" }, log.optLong("time"),
-                log.optString("kg", "0"), log.optString("reps", "0"), log.optString("memo"))
+                log.optString("kg", "0"), log.optString("reps", "0"), log.optString("memo"),
+                log.optString("unit", "회"))
         }
         return records.groupBy { date(it.time) }.toSortedMap(compareByDescending { it })
             .map { (day, entries) ->
@@ -194,6 +195,7 @@ class FitData(val json: JSONObject, private val zone: ZoneId = ZoneId.systemDefa
             val home = place == "집"
             replacement.put(JSONObject().apply {
                 put("date", today.toString()); put("id", e.getString("id")); put("name", e.optString("name"))
+                put("unit", e.optString("unit", "회"))
                 put("place", place); put("note", e.optString("note"))
                 put("kg", if (home) {
                     if (e.optString("equipment").contains("덤벨")) "3" else e.optString("homeKg", "0")
@@ -214,7 +216,8 @@ class FitData(val json: JSONObject, private val zone: ZoneId = ZoneId.systemDefa
         val token = UUID.randomUUID().toString()
         array("logs").put(JSONObject().apply {
             put("time", now); put("id", p.key.id); put("name", p.name); put("place", p.key.place)
-            put("kg", kg.trim()); put("reps", reps.trim()); put("memo", memo.trim()); put("entryId", token)
+            put("kg", kg.trim()); put("reps", reps.trim()); put("unit", p.unit)
+            put("memo", memo.trim()); put("entryId", token)
         })
         return token
     }
@@ -232,6 +235,7 @@ class FitData(val json: JSONObject, private val zone: ZoneId = ZoneId.systemDefa
             logs.put(JSONObject().apply {
                 put("time", now); put("id", exerciseId); put("name", exercise.optString("name"))
                 put("place", "PT"); put("kg", kg.trim()); put("reps", reps.trim())
+                put("unit", exercise.optString("unit", "회"))
                 put("memo", memo.trim()); put("entryId", UUID.randomUUID().toString())
             })
         }

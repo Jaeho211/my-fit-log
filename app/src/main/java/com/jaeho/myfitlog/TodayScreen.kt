@@ -93,7 +93,7 @@ internal fun TodayScreen(summary: TodaySummary, error: String?, modifier: Modifi
                                 }
                                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                     Text(p.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                                    Text("${weightLabel(p.kg)} · ${p.reps}회 × ${p.sets}세트",
+                                    Text("${weightLabel(p.kg)} · ${repsLabel(p.reps, p.unit)} × ${p.sets}세트",
                                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                                 val done = summary.counts[p.key.value] ?: 0

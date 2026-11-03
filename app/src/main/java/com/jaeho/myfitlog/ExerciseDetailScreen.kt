@@ -20,8 +20,8 @@ internal fun ExerciseDetailScreen(exercise: ExerciseDraft, modifier: Modifier) {
             Text(exercise.name, style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold,
                 modifier = Modifier.semantics { heading() })
         }
-        item { TargetCard("헬스장 · PT 목표", exercise.kg, exercise.reps, exercise.sets) }
-        if (exercise.home) item { TargetCard("집 목표", exercise.effectiveHomeKg, exercise.homeReps, exercise.homeSets) }
+        item { TargetCard("헬스장 · PT 목표", exercise.kg, exercise.reps, exercise.sets, exercise.unit) }
+        if (exercise.home) item { TargetCard("집 목표", exercise.effectiveHomeKg, exercise.homeReps, exercise.homeSets, exercise.unit) }
         item {
             Surface(shape = CardShape) {
                 Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -39,12 +39,12 @@ internal fun ExerciseDetailScreen(exercise: ExerciseDraft, modifier: Modifier) {
 }
 
 @Composable
-private fun TargetCard(title: String, kg: String, reps: String, sets: String) {
+private fun TargetCard(title: String, kg: String, reps: String, sets: String, unit: String) {
     Surface(shape = CardShape) {
         Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(title, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
             Text(weightLabel(kg), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            Text("${reps}회 × ${sets}세트", style = MaterialTheme.typography.titleMedium)
+            Text("${reps}${unit} × ${sets}세트", style = MaterialTheme.typography.titleMedium)
             Text("덤벨 무게는 한 개 기준", style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
