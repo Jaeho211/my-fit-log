@@ -54,7 +54,7 @@ internal fun WorkoutScreen(p: ExercisePlan, sets: List<SetEntry>, previous: SetE
                     Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                         Text("지난 기록 · ${formatTime(last.time, "M월 d일")}", style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text("${weightLabel(last.kg)} × ${repsLabel(last.reps)}", fontWeight = FontWeight.Bold)
+                        Text("${weightLabel(last.kg)} × ${repsLabel(last.reps, last.unit)}", fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -75,11 +75,11 @@ internal fun WorkoutScreen(p: ExercisePlan, sets: List<SetEntry>, previous: SetE
                     OutlinedTextField(value = kg, onValueChange = onKg, label = { Text("무게 kg") },
                         singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         shape = RoundedCornerShape(14.dp), modifier = Modifier.weight(1f))
-                    OutlinedTextField(value = reps, onValueChange = onReps, label = { Text("횟수") },
+                    OutlinedTextField(value = reps, onValueChange = onReps, label = { Text(if (p.unit == "초") "시간 (초)" else "횟수") },
                         singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         shape = RoundedCornerShape(14.dp), modifier = Modifier.weight(1f))
                 }
-                Text("덤벨 무게는 한 개 기준", style = MaterialTheme.typography.labelSmall,
+                Text(if (p.name.contains("덤벨")) "덤벨 무게는 한 개 기준" else if (p.unit == "초") "매달린 시간을 초 단위로 입력하세요" else "무게는 kg 단위로 입력하세요", style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 6.dp))
             }
         } else {
@@ -88,13 +88,13 @@ internal fun WorkoutScreen(p: ExercisePlan, sets: List<SetEntry>, previous: SetE
                 TextButton(onClick = onExtra, contentPadding = PaddingValues(0.dp)) { Text("추가 세트 기록") }
             }
         }
-        item { SetRow("세트", "무게", "횟수", "완료", header = true) }
+        item { SetRow("세트", "무게", if (p.unit == "초") "시간" else "횟수", "완료", header = true) }
         items(maxOf(p.sets, sets.size), key = { it }) { index ->
             val entry = sets.getOrNull(index)
             val current = index == sets.size && recording
             Column(Modifier.background(if (current) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
                 RoundedCornerShape(10.dp))) {
-                SetRow("${index + 1}", weightLabel(entry?.kg ?: if (current) kg else p.kg), "${entry?.reps ?: if (current) reps else p.reps}회",
+                SetRow("${index + 1}", weightLabel(entry?.kg ?: if (current) kg else p.kg), repsLabel(entry?.reps ?: if (current) reps else p.reps, entry?.unit ?: p.unit),
                     if (entry != null) "✓" else if (current) "입력 중" else "—", completed = entry != null)
                 if (!entry?.memo.isNullOrBlank()) Text(entry!!.memo, Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
