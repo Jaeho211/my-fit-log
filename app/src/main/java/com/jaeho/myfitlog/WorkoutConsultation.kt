@@ -18,14 +18,24 @@ internal fun workoutConsultationText(days: List<HistoryDay>): String = buildStri
         appendLine("## ${day.date} · ${day.setCount}세트")
         day.groups.sortedBy { it.records.first().time }.forEach { group ->
             appendLine("### ${group.name} / ${group.place} / ${group.records.size}세트")
-            group.records.forEachIndexed { index, record ->
-                val weight = record.kg.takeIf { it.isNotBlank() }?.let { "$it kg" } ?: "무게 미기록"
-                val reps = record.reps.takeIf { it.isNotBlank() }?.let { "$it 회" } ?: "횟수 미기록"
-                appendLine("- ${index + 1}세트: $weight × $reps")
-                if (record.memo.isNotBlank()) {
-                    appendLine("  메모:")
-                    record.memo.lineSequence().forEach { appendLine("    $it") }
-                }
+            // Merge consecutive equal sets while preserving changes in workout order.
+            val runs = mutableListOf<MutableList<HistoryRecord>>()
+            group.records.forEach { record ->
+                val previous = runs.lastOrNull()?.last()
+                if (previous != null && previous.kg.trim() == record.kg.trim() &&
+                    previous.reps.trim() == record.reps.trim()) runs.last().add(record)
+                else runs.add(mutableListOf(record))
+            }
+            runs.forEach { run ->
+                val record = run.first()
+                val weight = record.kg.trim().takeIf { it.isNotBlank() }?.let { "$it kg" } ?: "무게 미기록"
+                val reps = record.reps.trim().takeIf { it.isNotBlank() }?.let { "${it}회" } ?: "횟수 미기록"
+                appendLine("- $weight × $reps × ${run.size}세트")
+            }
+            val memos = group.records.map { it.memo.trim() }.filter { it.isNotBlank() }.distinct()
+            memos.forEach { memo ->
+                appendLine("  메모:")
+                memo.lineSequence().forEach { appendLine("    $it") }
             }
         }
     }

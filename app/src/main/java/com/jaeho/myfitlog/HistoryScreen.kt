@@ -96,7 +96,7 @@ internal fun HistoryScreen(history: List<HistoryDay>, today: LocalDate, error: S
                     modifier = Modifier.fillMaxWidth().testTag("copy_history")) {
                     Text("GPT 상담용 복사 · ${if (weekOnly) "이번 주" else "전체"}")
                 }
-                Text("날짜·운동·세트별 무게와 횟수·메모를 복사해요",
+                Text("같은 무게·횟수의 세트와 반복 메모를 요약해 복사해요",
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             error?.let { item { Text(it, color = MaterialTheme.colorScheme.error) } }

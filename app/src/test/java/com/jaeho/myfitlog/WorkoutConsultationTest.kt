@@ -21,13 +21,29 @@ class WorkoutConsultationTest {
         val text = workoutConsultationText(data.history().take(1))
         assertTrue(text.contains("운동한 날: 1일 / 총 2세트"))
         assertTrue(text.contains("덤벨 킥백 / PT / 2세트"))
-        assertTrue(text.contains("1세트: 무게 미기록 × 횟수 미기록"))
-        assertTrue(text.contains("2세트: 0 kg × 12 회"))
+        assertTrue(text.contains("무게 미기록 × 횟수 미기록 × 1세트"))
+        assertTrue(text.contains("0 kg × 12회 × 1세트"))
         assertTrue(text.contains("    왼팔\n    어깨 확인"))
         assertFalse(text.contains("이전 기록"))
         val all = workoutConsultationText(data.history())
         assertTrue(all.indexOf("## 2026-10-20") < all.indexOf("## 2026-11-02"))
         assertEquals(before, data.json.toString())
+    }
+
+    @Test fun mergesRepeatedSetsAndMemosButPreservesWeightChangeOrder() {
+        val date = LocalDate.of(2026, 11, 4)
+        val records = listOf("3", "3", "4", "3").mapIndexed { i, kg ->
+            HistoryRecord(HistoryKey(i, "", ""), "curl", "덤벨 컬", "집",
+                i.toLong(), kg, "25", "자세 확인")
+        }
+        val text = workoutConsultationText(listOf(HistoryDay(date,
+            listOf(HistoryGroup(date, "curl", "집", records)))))
+        assertTrue(text.contains("3 kg × 25회 × 2세트"))
+        assertTrue(text.contains("4 kg × 25회 × 1세트"))
+        assertTrue(text.indexOf("4 kg") < text.lastIndexOf("3 kg × 25회 × 1세트"))
+        assertEquals(1, Regex("자세 확인").findAll(text).count())
+        assertFalse(text.contains("1세트:"))
+        assertTrue(text.contains("총 4세트"))
     }
 
     @Test fun emptyHistoryDoesNotInventDatesOrCounts() {
