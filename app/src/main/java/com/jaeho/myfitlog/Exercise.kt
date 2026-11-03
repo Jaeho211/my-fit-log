@@ -8,6 +8,7 @@ data class ExerciseDraft(
     val id: String = "", val name: String = "", val equipment: String = "덤벨",
     val note: String = "", val kg: String = "3", val reps: String = "25", val sets: String = "3",
     val home: Boolean = false, val homeKg: String = "0", val homeReps: String = "25", val homeSets: String = "3",
+    val unit: String = "회",
 ) {
     val dumbbell: Boolean get() = equipment.contains("덤벨")
     val effectiveHomeKg: String get() = if (dumbbell) "3" else homeKg
@@ -15,6 +16,7 @@ data class ExerciseDraft(
     fun errors(): Map<String, String> = buildMap {
         if (name.isBlank()) put("name", "운동 이름을 입력해 주세요")
         if (equipment.isBlank()) put("equipment", "장비 또는 맨몸 여부를 입력해 주세요")
+        if (unit !in setOf("회", "초")) put("unit", "횟수 또는 초 단위만 지원합니다")
         if (!FitData.validWeight(kg)) put("kg", "0~1,000 kg")
         if (!FitData.validReps(reps)) put("reps", "1~1,000의 정수")
         if (!FitData.validReps(sets)) put("sets", "1~1,000의 정수")
@@ -28,21 +30,29 @@ data class ExerciseDraft(
     fun toJson(): JSONObject = JSONObject().apply {
         put("id", id); put("name", name); put("equipment", equipment); put("note", note)
         put("kg", kg); put("reps", reps); put("sets", sets); put("home", home)
-        put("homeKg", homeKg); put("homeReps", homeReps); put("homeSets", homeSets)
+        put("homeKg", homeKg); put("homeReps", homeReps); put("homeSets", homeSets); put("unit", unit)
     }
     companion object {
         fun fromJson(e: JSONObject) = ExerciseDraft(
             e.optString("id"), e.optString("name"), e.optString("equipment", "덤벨"), e.optString("note"),
             e.optString("kg", "3"), e.optString("reps", "25"), e.optString("sets", "3"),
             e.optBoolean("home"), e.optString("homeKg", "0"), e.optString("homeReps", "25"), e.optString("homeSets", "3"),
+            e.optString("unit", "회"),
         )
         fun normalizedName(value: String): String = value.trim().replace(Regex("\\s+"), " ").lowercase(Locale.ROOT)
         fun searchKey(value: String): String = value.lowercase(Locale.ROOT).replace(Regex("\\s+"), "")
     }
 }
 
-data class CatalogExercise(val name: String, val category: String, val equipment: String, val note: String = "") {
-    fun draft() = ExerciseDraft(name = name, equipment = equipment, note = note, kg = if (equipment == "덤벨") "3" else "0")
+data class CatalogExercise(
+    val name: String, val category: String, val equipment: String, val note: String = "",
+    val unit: String = "회", val targetReps: String = "25", val targetSets: String = "3",
+    val homeAvailable: Boolean = false,
+) {
+    fun draft() = ExerciseDraft(name = name, equipment = equipment, note = note,
+        kg = if (equipment == "덤벨") "3" else "0",
+        reps = targetReps, sets = targetSets, home = homeAvailable,
+        homeReps = targetReps, homeSets = targetSets, unit = unit)
 }
 
 /** Suggestions only; selecting one opens a form and never enrolls it until Save. */
@@ -55,10 +65,16 @@ val ExerciseCatalog = listOf(
     CatalogExercise("덤벨 숄더 프레스", "어깨", "덤벨"), CatalogExercise("아놀드 프레스", "어깨", "덤벨"),
     CatalogExercise("사이드 레터럴 레이즈", "어깨", "덤벨"), CatalogExercise("리버스 펙덱 플라이", "어깨", "머신"),
     CatalogExercise("랫풀다운", "등", "머신"), CatalogExercise("시티드 케이블 로우", "등", "케이블"),
+    CatalogExercise("투암 덤벨 로우", "등", "덤벨",
+        "덤벨 두 개를 들고 무릎을 살짝 굽힌 뒤 엉덩이를 뒤로 빼서 상체를 숙입니다. 허리와 목은 중립을 유지하며 양쪽 팔꿈치를 골반 방향으로 당긴 후 천천히 내립니다. 허리 통증이 있으면 중단하세요. 무게는 덤벨 한 개 기준입니다.",
+        targetReps = "12", targetSets = "2", homeAvailable = true),
     CatalogExercise("원암 덤벨 로우", "등", "덤벨"), CatalogExercise("체스트 서포티드 로우", "등", "머신"),
     CatalogExercise("페이스 풀", "등", "케이블"), CatalogExercise("체스트 프레스", "가슴", "머신"),
     CatalogExercise("펙덱 플라이", "가슴", "머신"), CatalogExercise("덤벨 벤치 프레스", "가슴", "덤벨 + 벤치"),
     CatalogExercise("덤벨 플로어 프레스", "가슴", "덤벨"), CatalogExercise("푸시업", "가슴", "맨몸"),
+    CatalogExercise("철봉 매달리기", "철봉", "철봉",
+        "철봉을 양손으로 잡고 몸의 흔들림 없이 매달리세요. 어깨를 과하게 늘어뜨리지 말고 통증 없는 자세를 유지합니다. 기록은 횟수가 아니라 매달린 시간(초) 기준입니다.",
+        unit = "초", targetReps = "20", targetSets = "2", homeAvailable = true),
     CatalogExercise("풀업", "철봉", "철봉"), CatalogExercise("친업", "철봉", "철봉"),
     CatalogExercise("스캐풀라 풀업", "철봉", "철봉"),
     CatalogExercise("라잉 레그 레이즈", "복부", "맨몸"),
