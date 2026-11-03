@@ -36,7 +36,18 @@ internal fun ExerciseEditorScreen(draft: ExerciseDraft, errors: Map<String, Stri
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         item { EditField(draft.name, { onEdit(draft.copy(name = it)) }, "운동 이름", "exercise_name", errors["name"]) }
-        item { EditField(draft.equipment, { onEdit(draft.copy(equipment = it)) }, "장비 · 맨몸", "exercise_equipment", errors["equipment"]) }
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                EditField(draft.equipment, { onEdit(draft.copy(equipment = it)) }, "장비 · 맨몸", "exercise_equipment", errors["equipment"])
+                Text("기록 단위", style = MaterialTheme.typography.labelMedium)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf("회" to "횟수", "초" to "시간 (초)").forEach { (unit, label) ->
+                        FilterChip(selected = draft.unit == unit, onClick = { onEdit(draft.copy(unit = unit)) },
+                            label = { Text(label) })
+                    }
+                }
+            }
+        }
         item {
             Text("헬스장 · PT 목표", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Text("덤벨은 한 개 무게, 맨몸은 0 kg으로 입력하세요.", style = MaterialTheme.typography.bodySmall,
@@ -44,7 +55,7 @@ internal fun ExerciseEditorScreen(draft: ExerciseDraft, errors: Map<String, Stri
         }
         item {
             TargetFields(draft.kg, draft.reps, draft.sets, "gym", errors["kg"], errors["reps"], errors["sets"],
-                { onEdit(draft.copy(kg = it)) }, { onEdit(draft.copy(reps = it)) }, { onEdit(draft.copy(sets = it)) })
+                { onEdit(draft.copy(kg = it)) }, { onEdit(draft.copy(reps = it)) }, { onEdit(draft.copy(sets = it)) }, unit = draft.unit)
         }
         item {
             HorizontalDivider()
@@ -66,7 +77,7 @@ internal fun ExerciseEditorScreen(draft: ExerciseDraft, errors: Map<String, Stri
                 TargetFields(draft.effectiveHomeKg, draft.homeReps, draft.homeSets, "home",
                     errors["homeKg"], errors["homeReps"], errors["homeSets"],
                     { onEdit(draft.copy(homeKg = it)) }, { onEdit(draft.copy(homeReps = it)) }, { onEdit(draft.copy(homeSets = it)) },
-                    fixedWeight = draft.dumbbell)
+                    fixedWeight = draft.dumbbell, unit = draft.unit)
                 if (draft.dumbbell) Text("집 덤벨은 한 개당 3 kg으로 고정됩니다.", style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 8.dp))
             }
@@ -85,19 +96,20 @@ internal fun ExerciseEditorScreen(draft: ExerciseDraft, errors: Map<String, Stri
 @Composable
 private fun TargetFields(kg: String, reps: String, sets: String, prefix: String,
                          kgError: String?, repsError: String?, setsError: String?,
-                         onKg: (String) -> Unit, onReps: (String) -> Unit, onSets: (String) -> Unit, fixedWeight: Boolean = false) {
+                         onKg: (String) -> Unit, onReps: (String) -> Unit, onSets: (String) -> Unit,
+                         fixedWeight: Boolean = false, unit: String = "회") {
     val largeText = LocalDensity.current.fontScale > 1.2f
     BoxWithConstraints {
         if (maxWidth < 300.dp || largeText) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 EditField(kg, onKg, "무게 kg", "${prefix}_kg", kgError, KeyboardType.Decimal, fixedWeight)
-                EditField(reps, onReps, "횟수", "${prefix}_reps", repsError, KeyboardType.Number)
+                EditField(reps, onReps, if (unit == "초") "시간 (초)" else "횟수", "${prefix}_reps", repsError, KeyboardType.Number)
                 EditField(sets, onSets, "세트", "${prefix}_sets", setsError, KeyboardType.Number)
             }
         } else {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Box(Modifier.weight(1f)) { EditField(kg, onKg, "무게 kg", "${prefix}_kg", kgError, KeyboardType.Decimal, fixedWeight) }
-                Box(Modifier.weight(1f)) { EditField(reps, onReps, "횟수", "${prefix}_reps", repsError, KeyboardType.Number) }
+                Box(Modifier.weight(1f)) { EditField(reps, onReps, if (unit == "초") "시간 (초)" else "횟수", "${prefix}_reps", repsError, KeyboardType.Number) }
                 Box(Modifier.weight(1f)) { EditField(sets, onSets, "세트", "${prefix}_sets", setsError, KeyboardType.Number) }
             }
         }
