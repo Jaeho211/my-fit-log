@@ -63,6 +63,8 @@ val ExerciseCatalog = listOf(
         "한 팔씩 번갈아 수행. 횟수는 한쪽 팔 기준으로 기록 (좌우 각각 25회 = 25회)."),
     CatalogExercise("케이블 푸시다운", "팔", "케이블"),
     CatalogExercise("덤벨 숄더 프레스", "어깨", "덤벨"), CatalogExercise("아놀드 프레스", "어깨", "덤벨"),
+    CatalogExercise("시티드 바벨 숄더프레스", "어깨", "바벨 + 벤치",
+        "Seated Barbell Shoulder Press. 무게는 봉과 양쪽 원판을 합한 총중량(kg)으로 기록합니다."),
     CatalogExercise("사이드 레터럴 레이즈", "어깨", "덤벨"), CatalogExercise("리버스 펙덱 플라이", "어깨", "머신"),
     CatalogExercise("랫풀다운", "등", "머신"), CatalogExercise("시티드 케이블 로우", "등", "케이블"),
     CatalogExercise("투암 덤벨 로우", "등", "덤벨",
