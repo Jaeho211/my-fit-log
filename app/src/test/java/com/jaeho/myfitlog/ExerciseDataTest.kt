@@ -16,7 +16,7 @@ class ExerciseDataTest {
         assertEquals("3", legacy.effectiveHomeKg)
         assertEquals("25", legacy.homeReps)
         assertEquals("3", legacy.homeSets)
-        assertEquals(25, ExerciseCatalog.size)
+        assertEquals(26, ExerciseCatalog.size)
         val singleArmKickback = ExerciseCatalog.single { it.name == "Single-arm Dumbbell Kickback" }
         assertEquals("팔", singleArmKickback.category)
         assertEquals("덤벨", singleArmKickback.equipment)
